@@ -9,14 +9,14 @@ Created on Wed Nov  4 17:12:08 2020
 DEFAULT_SAVE_INTERVAL = 5000
 EPOCH_SAVE_INTERVAL = 1000
 
-from rl4uc.rl4uc.environment import make_env
+from rl4uc.environment import make_env
 import torch
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
 import torch.multiprocessing as mp
 mp.set_start_method('spawn', force=True)
 
-from ac_agent import ACAgent
+from ts4uc.agents.ac_agent import ACAgent
 
 import numpy as np
 import os
