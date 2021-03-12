@@ -35,43 +35,32 @@ if __name__ == "__main__":
                         help='Decision node branching threshold')
     parser.add_argument('--expansion_mode', type=str, required=False, default='guided',
                         help='Method to use for the expansion nodes')
-    parser.add_argument('--seed', type=int, required=False, default=None,
+    parser.add_argument('--seed', type=int, required=False, default=np.random.randint(0,10000),
                         help='Set random seed')
     parser.add_argument('--horizon', type=int, required=False, default=1,
                         help='Lookahead horizon')
     parser.add_argument('--num_scenarios', type=int, required=False, default=100,
                         help='Number of scenarios to use when calculating expected costs')
+    parser.add_argument('--tree_search_method', type=str, required=False, default='uniform_cost_path',
+                        help='Tree search algorithm to use')
 
     args = parser.parse_args()
 
     # For HPC purposes, allow 'none' to be passed as arg to policy_filename
-    if args.policy_filename == "none":
-        args.policy_filename = None
+    if args.policy_filename == "none": args.policy_filename = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
 
-    # Load parameters
-    with open(args.params_fn) as f:
-        params = json.load(f)
-
     # Update params
-    params.update({'decision_branching_threshold': args.decision_branching_threshold,
-                   'expansion_mode': args.expansion_mode,
-                   'horizon': args.horizon})
+    params = vars(args)
 
     # Read the ARMA parameters. 
     arma_params = json.load(open(args.arma_params_fn))
-    params.update({'arma_params': arma_params})
 
     # Set random seeds
-    if args.seed is None or args.seed == "none":
-        seed = np.random.randint(0,10000)
-    else:
-        seed = args.seed
-    params.update({'test_seed': seed})
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
     # Save params file to save_dir 
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
