@@ -49,7 +49,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Solve a single day with tree search')
     parser.add_argument('--save_dir', type=str, required=True,
                         help='Directory to save results')
-    parser.add_argument('--params_fn', type=str, required=True,
+    parser.add_argument('--policy_params_fn', type=str, required=False,
                         help='Filename for parameters')
     parser.add_argument('--arma_params_fn', type=str, required=True,
                         help='Filename for ARMA parameters')
@@ -81,8 +81,9 @@ if __name__ == "__main__":
     # Update params
     params = vars(args)
 
-    # Read the ARMA parameters. 
+    # Read the parameters
     arma_params = json.load(open(args.arma_params_fn))
+    if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
 
     # Set random seeds
     np.random.seed(args.seed)
@@ -113,7 +114,7 @@ if __name__ == "__main__":
 
     # Load policy 
     if args.policy_filename is not None:
-        policy = ACAgent(env, **params)
+        policy = ACAgent(env, **policy_params)
         if torch.cuda.is_available():
             policy.cuda()
         policy.load_state_dict(torch.load(args.policy_filename))        

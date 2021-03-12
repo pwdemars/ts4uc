@@ -46,12 +46,15 @@ def get_all_actions(env):
     
     return actions
 
-def get_actions_with_policy(env, policy, num_samples=1000, branching_threshold=0.05):
+def get_actions_with_policy(env, policy, **policy_kwargs):
     """
     Use a policy to get a state of actions for the `env` state.
 
     This is used to implement `guided expansion`.
     """
+    branching_threshold = policy_kwargs.get('branching_threshold', 0.05)
+    num_samples = policy_kwargs.get('num_samples', 1000)
+
     action_dict, log_prob = policy.generate_multiple_actions_batched(env, env.state, num_samples, branching_threshold)
     
     action = np.where(env.status > 0, 1, 0)
