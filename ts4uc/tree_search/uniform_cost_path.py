@@ -206,7 +206,13 @@ if __name__=="__main__":
     policy.load_state_dict(torch.load(POLICY_FN))
 
     s = time.time()
-    schedule_result = solve_day_ahead(env, HORIZON, net_demand_scenarios, policy=None, branching_threshold=BRANCHING_THRESHOLD, tree_search_func=a_star)
+    schedule_result = solve_day_ahead(env, 
+                                      HORIZON, 
+                                      net_demand_scenarios, 
+                                      policy=None, 
+                                      branching_threshold=
+                                      BRANCHING_THRESHOLD, 
+                                      tree_search_func=a_star)
     time_taken = time.time() - s
 
     # Get distribution of costs for solution by running multiple times through environment

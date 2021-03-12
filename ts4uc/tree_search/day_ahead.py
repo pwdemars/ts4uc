@@ -41,22 +41,12 @@ if __name__ == "__main__":
                         help='Lookahead horizon')
     parser.add_argument('--num_scenarios', type=int, required=False, default=100,
                         help='Number of scenarios to use when calculating expected costs')
-    parser.add_argument('--cost_to_go', type=str, required=False, default="false",
-                        help='Use cost to go heuristic for state evaluation. Default is False')
-    parser.add_argument('--step_size', type=int, required=False, default=1,
-                        help='The resolution at which the search tree is built. Default is 1: there is a node for every timestep')
 
     args = parser.parse_args()
 
     # For HPC purposes, allow 'none' to be passed as arg to policy_filename
     if args.policy_filename == "none":
         args.policy_filename = None
-
-    if args.cost_to_go == "true":
-        args.cost_to_go = True
-    elif args.cost_to_go == "false":
-        args.cost_to_go = False
-    print(args.cost_to_go)
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
@@ -68,9 +58,7 @@ if __name__ == "__main__":
     # Update params
     params.update({'decision_branching_threshold': args.decision_branching_threshold,
                    'expansion_mode': args.expansion_mode,
-                   'cost_to_go': args.cost_to_go,
-                   'horizon': args.horizon,
-                   'step_size': args.step_size})
+                   'horizon': args.horizon})
 
     # Read the ARMA parameters. 
     arma_params = json.load(open(args.arma_params_fn))
@@ -121,20 +109,15 @@ if __name__ == "__main__":
         policy_network = None
         print("Using untrained policy network")
 
-    print(f"Using cost to go: {args.cost_to_go}")
     print(f"Horizon: {args.horizon}")
 
     # Run the tree search
-    retain_tree = False if args.step_size > 1 else True
     s = time.time()
     schedule_result, n_branches = tree_search.solve_day_ahead(env=env, 
                                                               H=args.horizon, 
                                                               scenarios=scenarios, 
                                                               policy_network=policy_network, 
                                                               expansion_mode=args.expansion_mode, 
-                                                              cost_to_go=args.cost_to_go, 
-                                                              retain_tree=retain_tree, 
-                                                              step_size=args.step_size,
                                                               node_params=params)
     time_taken = time.time() - s
 
