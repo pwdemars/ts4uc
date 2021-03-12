@@ -142,33 +142,6 @@ def a_star(env,
             heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
             frontier.put((child.path_cost + heuristic_cost, id(child), child))
 
-def solve_day_ahead(env, 
-                    horizon, 
-                    net_demand_scenarios,
-                    tree_search_func=uniform_cost_search, 
-                    **policy_kwargs):
-    """
-    Solve a day rooted at env. 
-    
-    Return the schedule and the number of branches at the root for each time period. 
-    """
-    env.reset()
-    final_schedule = np.zeros((env.episode_length, env.num_gen))
-
-    for t in range(env.episode_length):
-        terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
-        path, cost = tree_search_func(env, 
-                                      terminal_timestep, 
-                                      net_demand_scenarios,
-                                      **policy_kwargs)
-        a_best = path[0]
-        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), cost)
-        final_schedule[t, :] = a_best
-        env.step(a_best, deterministic=True)
-        gc.collect()
-        
-    return final_schedule
-
 if __name__=="__main__":
 
     import json

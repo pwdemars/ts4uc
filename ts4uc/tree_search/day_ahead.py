@@ -3,9 +3,9 @@
 
 from rl4uc.environment import make_env
 
-from ts4uc.tree_search.scenarios import get_scenarios
+from ts4uc.tree_search import scenarios
 from ts4uc.agents.ac_agent import ACAgent
-import ts4uc.helpers as helpers
+from ts4uc import helpers
 from ts4uc.tree_search.algos import uniform_cost_search, a_star
 
 import numpy as np
@@ -16,6 +16,33 @@ import os
 import json
 import gc
 import time
+
+def solve_day_ahead(env, 
+                    horizon, 
+                    net_demand_scenarios,
+                    tree_search_func=uniform_cost_search, 
+                    **policy_kwargs):
+    """
+    Solve a day rooted at env. 
+    
+    Return the schedule and the number of branches at the root for each time period. 
+    """
+    env.reset()
+    final_schedule = np.zeros((env.episode_length, env.num_gen))
+
+    for t in range(env.episode_length):
+        terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
+        path, cost = tree_search_func(env, 
+                                      terminal_timestep, 
+                                      net_demand_scenarios,
+                                      **policy_kwargs)
+        a_best = path[0]
+        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), cost)
+        final_schedule[t, :] = a_best
+        env.step(a_best, deterministic=True)
+        gc.collect()
+        
+    return final_schedule
 
 if __name__ == "__main__":
 
@@ -82,7 +109,7 @@ if __name__ == "__main__":
     env = make_env(mode='test', profiles_df=profile_df, **params)
 
     # Generate scenarios for demand and wind errors
-    demand_errors, wind_errors = get_scenarios(env, args.num_scenarios, env.episode_length)
+    demand_errors, wind_errors = scenarios.get_scenarios(env, args.num_scenarios, env.episode_length)
     scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
     scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
 
@@ -106,10 +133,10 @@ if __name__ == "__main__":
     # Run the tree search
     s = time.time()
     schedule_result = solve_day_ahead(env=env, 
-                                                  net_demand_scenarios=scenarios, 
-                                                  tree_search_func=funcs_dict[args.tree_search_func_name],
-                                                  policy=policy,
-                                                  **params)
+                                      net_demand_scenarios=scenarios, 
+                                      tree_search_func=funcs_dict[args.tree_search_func_name],
+                                      policy=policy,
+                                      **params)
     time_taken = time.time() - s
 
     # Get distribution of costs for solution by running multiple times through environment
