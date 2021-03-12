@@ -20,8 +20,8 @@ def is_feasible(state, horizon):
 	return True
 
 def heuristic(node, horizon):
+	"""Simple heuristic that gives np.inf if a node's state is infeasible, else 0"""
 	if is_feasible(node.state, horizon) == False:
 		return np.inf
 	else:
-		return horizon * np.sum(node.state.gen_info.hot_cost) +  np.dot(node.state.gen_info.heat_rates.values, 
-																	    node.state.gen_info.max_output.values)
+		return 0 
