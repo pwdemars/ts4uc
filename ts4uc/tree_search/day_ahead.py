@@ -6,7 +6,7 @@ from rl4uc.environment import make_env
 from ts4uc.tree_search.scenarios import get_scenarios
 from ts4uc.agents.ac_agent import ACAgent
 import ts4uc.helpers as helpers
-from ts4uc.tree_search.algos import uniform_cost_search, a_star, solve_day_ahead
+from ts4uc.tree_search.algos import uniform_cost_search, a_star
 
 import numpy as np
 import argparse 
