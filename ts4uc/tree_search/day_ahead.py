@@ -59,8 +59,8 @@ if __name__ == "__main__":
                         help='Location of problem file [.csv]')
     parser.add_argument('--num_samples', type=int, required=False, default=1000,
                         help='Number of times to sample running the schedules through the environment')
-    parser.add_argument('--decision_branching_threshold', type=float, required=False, default=0.01,
-                        help='Decision node branching threshold')
+    parser.add_argument('--branching_threshold', type=float, required=False, default=0.05,
+                        help='Branching threshold (for guided expansion)')
     parser.add_argument('--seed', type=int, required=False, default=np.random.randint(0,10000),
                         help='Set random seed')
     parser.add_argument('--horizon', type=int, required=False, default=1,
