@@ -25,6 +25,7 @@ class Node(object):
         self.is_expanded = False
 
 def get_actions(env, policy, **policy_kwargs):
+    """Wrapper function for get actions with policy (guided search) or without (unguided)"""
     if policy != None:
         return get_actions_with_policy(env, policy, **policy_kwargs)
     else:
@@ -121,7 +122,7 @@ def a_star(env,
            terminal_timestep, 
            net_demand_scenarios,
            **policy_kwargs):
-    """Uniform cost search"""
+    """A* star"""
     node = Node(env=env,
                 parent=None,
                 action=None,
@@ -137,7 +138,7 @@ def a_star(env,
             return get_solution(node)
         for action in get_actions(node.state, 
                                   **policy_kwargs):
-            net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep, axis=1)
+            net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
             heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
             frontier.put((child.path_cost + heuristic_cost, id(child), child))

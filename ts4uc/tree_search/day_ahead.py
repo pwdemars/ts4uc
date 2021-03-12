@@ -61,8 +61,6 @@ if __name__ == "__main__":
                         help='Number of times to sample running the schedules through the environment')
     parser.add_argument('--decision_branching_threshold', type=float, required=False, default=0.01,
                         help='Decision node branching threshold')
-    parser.add_argument('--expansion_mode', type=str, required=False, default='guided',
-                        help='Method to use for the expansion nodes')
     parser.add_argument('--seed', type=int, required=False, default=np.random.randint(0,10000),
                         help='Set random seed')
     parser.add_argument('--horizon', type=int, required=False, default=1,
@@ -120,10 +118,10 @@ if __name__ == "__main__":
             policy.cuda()
         policy.load_state_dict(torch.load(args.policy_filename))        
         policy.eval()
-        print("Using trained policy network")
+        print("Guided search")
     else:
         policy = None
-        print("Using untrained policy network")
+        print("Unguided search")
 
     # Convert the tree_search_method argument to a function:
     func_list = [uniform_cost_search, a_star]

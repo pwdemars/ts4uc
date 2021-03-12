@@ -16,6 +16,7 @@ def is_feasible(state, horizon):
 
 		if available_cap < net_demand:
 			return False
+
 	return True
 
 def heuristic(node, horizon):
