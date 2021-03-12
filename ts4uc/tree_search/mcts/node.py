@@ -54,7 +54,7 @@ class DecisionNode(object):
                                    kwargs.get('exploration_scale',DEFAULT_EXPLORATION_SCALING))
                 
         # Branching threshold for decision node, required for guided expansion 
-        self.branching_threshold = float(kwargs.get('decision_branching_threshold', DEFAULT_DECISION_BRANCHING_THRESHOLD))
+        self.branching_threshold = float(kwargs.get('branching_threshold', DEFAULT_DECISION_BRANCHING_THRESHOLD))
 
         # Threshold of lost load probability at which a node should be pruned 
         self.prune_threshold = kwargs.get('prune_threshold', DEFAULT_PRUNE_THRESHOLD)
