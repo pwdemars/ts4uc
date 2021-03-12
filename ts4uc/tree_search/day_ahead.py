@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ts4uc.tree_search.scenarios import get_scenarios
 from rl4uc.environment import make_env
+
+from ts4uc.tree_search.scenarios import get_scenarios
 from ts4uc.agents.ac_agent import ACAgent
 import ts4uc.helpers as helpers
-import ts4uc.tree_search.tree_search as tree_search
+from ts4uc.tree_search.algos import uniform_cost_search, a_star, solve_day_ahead
 
 import numpy as np
 import argparse 
@@ -41,7 +42,7 @@ if __name__ == "__main__":
                         help='Lookahead horizon')
     parser.add_argument('--num_scenarios', type=int, required=False, default=100,
                         help='Number of scenarios to use when calculating expected costs')
-    parser.add_argument('--tree_search_method', type=str, required=False, default='uniform_cost_path',
+    parser.add_argument('--tree_search_func_name', type=str, required=False, default='uniform_cost_search',
                         help='Tree search algorithm to use')
 
     args = parser.parse_args()
@@ -84,37 +85,37 @@ if __name__ == "__main__":
     demand_errors, wind_errors = get_scenarios(env, args.num_scenarios, env.episode_length)
     scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
     scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
-    scenarios = np.insert(scenarios, 0, [0]*args.num_scenarios, axis=1) # Insert the initial scenarios for the root node (can be set to 0). 
 
     # Load policy 
     if args.policy_filename is not None:
-        policy_network = ACAgent(env, **params)
+        policy = ACAgent(env, **params)
         if torch.cuda.is_available():
-            policy_network.cuda()
-        policy_network.load_state_dict(torch.load(args.policy_filename))        
-        policy_network.eval()
+            policy.cuda()
+        policy.load_state_dict(torch.load(args.policy_filename))        
+        policy.eval()
         print("Using trained policy network")
     else:
-        policy_network = None
+        policy = None
         print("Using untrained policy network")
 
-    print(f"Horizon: {args.horizon}")
+    # Convert the tree_search_method argument to a function:
+    func_list = [uniform_cost_search, a_star]
+    func_names = [f.__name__ for f in func_list]
+    funcs_dict = dict(zip(func_names, func_list))
 
     # Run the tree search
     s = time.time()
-    schedule_result, n_branches = tree_search.solve_day_ahead(env=env, 
-                                                              H=args.horizon, 
-                                                              scenarios=scenarios, 
-                                                              policy_network=policy_network, 
-                                                              expansion_mode=args.expansion_mode, 
-                                                              node_params=params)
+    schedule_result = solve_day_ahead(env=env, 
+                                                  net_demand_scenarios=scenarios, 
+                                                  tree_search_func=funcs_dict[args.tree_search_func_name],
+                                                  policy=policy,
+                                                  **params)
     time_taken = time.time() - s
 
     # Get distribution of costs for solution by running multiple times through environment
     TEST_SAMPLE_SEED=999
     test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
     helpers.save_results(prof_name, args.save_dir, env.num_gen, schedule_result, test_costs, lost_loads, time_taken)
-    helpers.save_branches(prof_name, args.save_dir, n_branches)
 
     print("Done")
     print()
