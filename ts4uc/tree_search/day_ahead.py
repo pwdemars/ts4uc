@@ -51,8 +51,8 @@ if __name__ == "__main__":
                         help='Directory to save results')
     parser.add_argument('--policy_params_fn', type=str, required=False,
                         help='Filename for parameters')
-    parser.add_argument('--arma_params_fn', type=str, required=True,
-                        help='Filename for ARMA parameters')
+    parser.add_argument('--env_params_fn', type=str, required=True,
+                        help='Filename for environment parameters, including ARMAs, number of generators, dispatch frequency')
     parser.add_argument('--policy_filename', type=str, required=False,
                         help="Filename for policy [.pt]. Set to 'none' or omit this argument to train from scratch", default=None)
     parser.add_argument('--test_data', type=str, required=True,
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     params = vars(args)
 
     # Read the parameters
-    arma_params = json.load(open(args.arma_params_fn))
+    env_params = json.load(open(args.env_params_fn))
     if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
 
     # Set random seeds
@@ -97,8 +97,8 @@ if __name__ == "__main__":
         fp.write(json.dumps(params, sort_keys=True, indent=4))
 
     # Save arma params to save_dir
-    with open(os.path.join(args.save_dir, 'arma_params.json'), 'w') as fp:
-        fp.write(json.dumps(arma_params, sort_keys=True, indent=4))
+    with open(os.path.join(args.save_dir, 'env_params.json'), 'w') as fp:
+        fp.write(json.dumps(env_params, sort_keys=True, indent=4))
 
     prof_name = os.path.basename(os.path.normpath(args.test_data)).split('.')[0]
 
@@ -108,7 +108,8 @@ if __name__ == "__main__":
 
     # Initialise environment with forecast profile and reference forecast (for scaling)
     profile_df = pd.read_csv(args.test_data)
-    env = make_env(mode='test', profiles_df=profile_df, arma_params=arma_params)
+    env = make_env(mode='test', profiles_df=profile_df, **env_params)
+    print(env.num_gen)
 
     # Generate scenarios for demand and wind errors
     demand_errors, wind_errors = scenarios.get_scenarios(env, args.num_scenarios, env.episode_length)
