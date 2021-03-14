@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
 	TEST_DATA_FN = pkg_resources.resource_stream('rl4uc', 'data/test_data_10gen.csv')	
 	NUM_DAYS = 20
-	NUM_GENS = [5, 10, 20, 30]
+	NUM_GENS = [5, 6, 7, 8, 9, 10, 20, 30]
 	DISPATCH_FREQS = [30]
 
 	all_df = pd.read_csv(TEST_DATA_FN)
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 		for disp_freq in DISPATCH_FREQS:
 			print(num_gen, disp_freq)
 			upsample_factor = 30 / disp_freq
-			dir_name = 'foo/{}gen/{}min'.format(num_gen, disp_freq)
+			dir_name = 'day_ahead/{}gen/{}min'.format(num_gen, disp_freq)
 			os.makedirs(dir_name, exist_ok=True)
 			for day in test_days:
 				fn = 'profile_{}.csv'.format(str(day))
