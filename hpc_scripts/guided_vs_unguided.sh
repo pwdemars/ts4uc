@@ -10,6 +10,6 @@ done
 
 # unguided search, g={5..10}, H=2
 for g in {5..10};
-do qsub -l h_rt=1:00:00 test_tree_search.sh $HOME/Scratch/results/${date}/unguided/g${g}/h2 none $HOME/AISO_HPC/mar14/${g}_arma_params.json none 2 -1 uniform_cost_search $HOME/AISO_HPC/AISO/input_g${g}_d30.txt;
+do qsub -l h_rt=1:00:00 test_tree_search.sh $HOME/Scratch/results/${date}/unguided/g${g}/h2 none $HOME/AISO_HPC/mar14/${g}_env_params.json none 2 -1 uniform_cost_search $HOME/AISO_HPC/AISO/input_g${g}_d30.txt;
 done
 
