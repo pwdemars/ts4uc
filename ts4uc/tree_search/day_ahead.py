@@ -6,7 +6,7 @@ from rl4uc.environment import make_env
 from ts4uc.tree_search import scenarios
 from ts4uc.agents.ac_agent import ACAgent
 from ts4uc import helpers
-from ts4uc.tree_search.algos import uniform_cost_search, a_star
+from ts4uc.tree_search.algos import uniform_cost_search, a_star, brute_force
 
 import numpy as np
 import argparse 
@@ -86,6 +86,7 @@ if __name__ == "__main__":
     if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
 
     # Set random seeds
+    print(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
@@ -105,7 +106,7 @@ if __name__ == "__main__":
 
     # Initialise environment with forecast profile and reference forecast (for scaling)
     profile_df = pd.read_csv(args.test_data)
-    env = make_env(mode='test', profiles_df=profile_df, **params)
+    env = make_env(mode='test', profiles_df=profile_df, arma_params=arma_params)
 
     # Generate scenarios for demand and wind errors
     demand_errors, wind_errors = scenarios.get_scenarios(env, args.num_scenarios, env.episode_length)
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         print("Unguided search")
 
     # Convert the tree_search_method argument to a function:
-    func_list = [uniform_cost_search, a_star]
+    func_list = [uniform_cost_search, a_star, brute_force]
     func_names = [f.__name__ for f in func_list]
     funcs_dict = dict(zip(func_names, func_list))
 

@@ -4,6 +4,7 @@
 from ts4uc.tree_search import scenarios
 from rl4uc.environment import make_env
 from ts4uc.agents.ac_agent import ACAgent
+from ts4uc.tree_search.mcts.node import DecisionNode, DummyNode
 import informed_search
 
 import numpy as np
@@ -57,6 +58,7 @@ def get_actions_with_policy(env, policy, **policy_kwargs):
 
     action_dict, log_prob = policy.generate_multiple_actions_batched(env, env.state, num_samples, branching_threshold)
     
+    # Add the do nothing action
     action = np.where(env.status > 0, 1, 0)
     action_id = ''.join(str(int(i)) for i in action)
     action_id = int(action_id, 2)
@@ -146,62 +148,60 @@ def a_star(env,
             heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
             frontier.put((child.path_cost + heuristic_cost, id(child), child))
 
-if __name__=="__main__":
+def brute_force(env,
+                terminal_timestep,
+                net_demand_scenarios,
+                **kwargs):
+    policy_network = kwargs.get('policy', None)
+    H = terminal_timestep - env.episode_timestep 
+    expansion_mode = 'vanilla' if policy_network is None else 'guided'
+    root = DecisionNode(environment=env, 
+        policy_network=kwargs.get('policy', None), 
+        parent=DummyNode(env.num_gen),
+       **kwargs)
 
-    import json
-    import time
-    import torch
+    path, cost = find_best_path(node=root,
+                                H=H,
+                                net_demand_scenarios=net_demand_scenarios,
+                                expansion_mode=expansion_mode)
 
-    # User inputs:
-    HORIZON=2
-    NUM_SCENARIOS=100
-    NUM_GEN=5
-    NUM_TEST_SAMPLES=1000
-    BRANCHING_THRESHOLD=0.1
-    PROF_NAME = 'profile_2017-05-26'
-    SAVE_DIR = 'foo'
-    PROFILE_FN = '../../data/day_ahead/5gen/30min/{}.csv'.format(PROF_NAME)
-    PARAMS_FN = '../../results/feb4_g5_d30_v1/params.json'
-    POLICY_FN = '../../results/feb4_g5_d30_v1/ac_final.pt'
-    TREE_SEARCH_FUNC = a_star
+    path = path[1:]
+    return path, cost
 
-    os.makedirs(SAVE_DIR, exist_ok=True)
+def find_best_path(node, H, net_demand_scenarios, expansion_mode='guided', cost_to_go=False, step_size=1):
+    """
+    Brute force algorithm, used for the original IEEE Smart Grid submission
+    """
+    if node.expected_cost is None:
+        net_demands = np.take(net_demand_scenarios, node.environment.episode_timestep, axis=1)
+        node.expected_cost = scenarios.calculate_expected_costs(node.environment, net_demands)
 
-    profile_df = pd.read_csv(PROFILE_FN)
-    params = json.load(open(PARAMS_FN))
-    env = make_env(mode='test', profiles_df=profile_df, **params)
-    env.reset()
+    if H == 0 or node.node_is_terminal():
+        if cost_to_go is True:
+            cost_to_go = -node.simulate_pl()
+        else:
+            cost_to_go = 0
+        return [node.environment.commitment], node.expected_cost + cost_to_go
 
-    # Generate scenarios
-    np.random.seed(2)
-    demand_errors, wind_errors = scenarios.get_scenarios(env, NUM_SCENARIOS, env.episode_length)
-    net_demand_scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
-    net_demand_scenarios = np.clip(net_demand_scenarios, env.min_demand, env.max_demand)
+    if node.is_expanded is False:
+        node.expansion_mode = expansion_mode # change the expansion mode: vanilla or guided
+        node.expand_decision()
+        node.is_expanded = True
 
-    # Load the policy
-    policy = ACAgent(env, **params)
-    policy.load_state_dict(torch.load(POLICY_FN))
+    if (node.depth_from_root() == 0) and (len(node.children) == 1):
+        random_node = list(node.children.values())[0]
+        random_node.expand_deterministic(step_size=step_size)
+        return [node.environment.commitment, list(node.children.values())[0].action], None
 
-    s = time.time()
-    schedule_result = solve_day_ahead(env, 
-                                      HORIZON, 
-                                      net_demand_scenarios, 
-                                      policy=None, 
-                                      branching_threshold=
-                                      BRANCHING_THRESHOLD, 
-                                      tree_search_func=a_star)
-    time_taken = time.time() - s
+    options = []
+    for random_node in list(node.children.values()):
+        # get to the next decision node
+        random_node.expand_deterministic(step_size=step_size)
+        child = random_node.children[0]
+        path, cost = find_best_path(child, H-1, net_demand_scenarios, expansion_mode, cost_to_go)
+        options.append((path, cost))
 
-    # Get distribution of costs for solution by running multiple times through environment
-    TEST_SAMPLE_SEED=999
-    test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_TEST_SAMPLES)
-    helpers.save_results(PROF_NAME, SAVE_DIR, env.num_gen, schedule_result, test_costs, lost_loads, time_taken)
+    path, cost = min(options, key=lambda option: option[1])
+    path.insert(0, node.environment.commitment)
 
-    print("Done")
-    print()
-    print("Mean costs: ${:.2f}".format(np.mean(test_costs)))
-    print("Lost load prob: {:.3f}%".format(100*np.sum(lost_loads)/(NUM_TEST_SAMPLES * env.episode_length)))
-    print("Time taken: {:.2f}s".format(time_taken))
-    print() 
-
-    
+    return path, cost + node.expected_cost
