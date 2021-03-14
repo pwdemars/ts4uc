@@ -96,7 +96,7 @@ if __name__ == "__main__":
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
         fp.write(json.dumps(params, sort_keys=True, indent=4))
 
-    # Save arma params to save_dir
+    # Save env params to save_dir
     with open(os.path.join(args.save_dir, 'env_params.json'), 'w') as fp:
         fp.write(json.dumps(env_params, sort_keys=True, indent=4))
 

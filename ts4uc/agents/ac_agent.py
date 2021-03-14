@@ -134,8 +134,8 @@ class ACAgent(nn.Module):
     """
     def __init__(self, env, **kwargs):
         super(ACAgent, self).__init__()
-        self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs') * 60 / kwargs.get('dispatch_freq_mins'))
-        self.dispatch_freq_mins = kwargs.get('dispatch_freq_mins')
+        self.dispatch_freq_mins = env.dispatch_freq_mins
+        self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs') * 60 / self.dispatch_freq_mins)
         
         self.observe_forecast_errors = kwargs.get('observe_forecast_errors', DEFAULT_OBSERVE_FORECAST_ERRORS)
         

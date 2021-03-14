@@ -174,7 +174,7 @@ if __name__ == "__main__":
                         help="Filename for actor critic [.pt]", default=None)
     parser.add_argument('--num_procs', type=int, required=False,
                         help="Number of workers", default=1)
-    parser.add_argument('--arma_params_fn', type=str, required=True,
+    parser.add_argument('--env_params_fn', type=str, required=True,
                         help='Filename for ARMA parameters')
     parser.add_argument('--num_epochs', type=int, required=True, help='Number of training epochs')
 
@@ -210,19 +210,19 @@ if __name__ == "__main__":
     np.random.seed(params.get('seed'))
     torch.manual_seed(params.get('seed'))
         
-    # Read the ARMA parameters. 
-    arma_params = json.load(open(args.arma_params_fn))
-    params.update({'arma_params':arma_params})
+    # Read the env parameters and these to all params 
+    env_params = json.load(open(args.env_params_fn))
+    params.update({'env_params':env_params})
 
     # Check if cuda is available:
     if torch.cuda.is_available():
          torch.set_default_tensor_type('torch.cuda.FloatTensor')
     
     # initialise environment and the shared networks 
-    env = make_env(**params)
+    env = make_env(**env_params)
     shared_ac = ACAgent(env, **params)
     
-    # update params with ARMA sigmas 
+    # update params with env params 
     params.update({'demand_sigma': env.arma_demand.sigma,
                    'wind_sigma': env.arma_wind.sigma})
     
@@ -230,9 +230,9 @@ if __name__ == "__main__":
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
         fp.write(json.dumps(params, sort_keys=True, indent=4))
 
-    # Save arma params to save_dir
-    with open(os.path.join(args.save_dir, 'arma_params.json'), 'w') as fp:
-        fp.write(json.dumps(arma_params, sort_keys=True, indent=4))
+    # Save env params to save_dir
+    with open(os.path.join(args.save_dir, 'env_params.json'), 'w') as fp:
+        fp.write(json.dumps(env_params, sort_keys=True, indent=4))
 
     # Load weights if necessary
     if args.ac_filename is not None:
