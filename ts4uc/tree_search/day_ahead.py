@@ -74,6 +74,8 @@ if __name__ == "__main__":
 
     # For HPC purposes, allow 'none' to be passed as arg to policy_filename
     if args.policy_filename == "none": args.policy_filename = None
+    if args.policy_params_fn == "none": args.policy_params_fn = None
+    if args.branching_threshold == -1: args.branching_threshold = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
