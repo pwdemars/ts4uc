@@ -8,6 +8,7 @@ import os
 
 if __name__ == "__main__":
 
+    # seed = 2 used for IEEE submission
 	SEED = 2
 	np.random.seed(SEED)
 
