@@ -1,7 +1,7 @@
 #/bin/bash
 
 # set today's date to use as save directory
-date=$(date +"%m-%d-%y")
+date=$(date +"%y-%m-%d")
 
 # guided search, g={5..10}, H=2, rho=0.05
 for g in {5..10};

@@ -173,7 +173,7 @@ class ACAgent(nn.Module):
         self.output_cr = nn.Linear(self.num_nodes, 1)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.test_seed = kwargs.get('test_seed', np.random.randint(10000))
+        self.seed = kwargs.get('seed')
     
     def get_action_scores(self, x):
         x = self.in_ac(x)
@@ -296,7 +296,7 @@ class ACAgent(nn.Module):
         # Repeat x N times
         xs = x.repeat(N_samples, 1)
 
-        torch.manual_seed(self.test_seed) # Ensures that same set of actions are generated for a given observation
+        torch.manual_seed(self.seed) # Ensures that same set of actions are generated for a given observation
         
         for idx in unconstrained_gens:
             # Set one-hot encoding
