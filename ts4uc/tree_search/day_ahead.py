@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     # Load policy 
     if args.policy_filename is not None:
-        policy = ACAgent(env, **policy_params)
+        policy = ACAgent(env, test_seed=args.seed, **policy_params)
         if torch.cuda.is_available():
             policy.cuda()
         policy.load_state_dict(torch.load(args.policy_filename))        

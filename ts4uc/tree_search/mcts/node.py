@@ -324,7 +324,6 @@ class DecisionNode(object):
             action_dict, log_prob = self.policy_network.generate_multiple_actions_batched(self.environment,
                                                                                   self.environment.state,
                                                                                   N_SAMPLES, self.branching_threshold)
-            
             # Record joint log probability of children
             self.branch_log_prob = log_prob
 

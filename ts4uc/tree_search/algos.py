@@ -164,7 +164,6 @@ def brute_force(env,
                                 H=H,
                                 net_demand_scenarios=net_demand_scenarios,
                                 expansion_mode=expansion_mode)
-
     path = path[1:]
     return path, cost
 
