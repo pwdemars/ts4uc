@@ -30,12 +30,13 @@ def solve_day_ahead(env,
     env.reset()
     final_schedule = np.zeros((env.episode_length, env.num_gen))
 
+    node = Node(env=env,
+            parent=None,
+            action=None,
+            path_cost=0)
+
     for t in range(env.episode_length):
         terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
-        node = Node(env=env,
-                    parent=None,
-                    action=None,
-                    path_cost=0)
         path, cost = tree_search_func(node, 
                                       terminal_timestep, 
                                       net_demand_scenarios,
@@ -44,6 +45,10 @@ def solve_day_ahead(env,
         print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), cost)
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
+
+        node = node.children[a_best.tobytes()]
+        node.parent, node.path_cost = None, 0
+
         gc.collect()
         
     return final_schedule

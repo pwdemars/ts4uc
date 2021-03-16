@@ -24,13 +24,19 @@ class Node(object):
         self.action = action
         self.path_cost = path_cost
         self.is_expanded = False
+        self.children = {}
 
-def get_actions(env, policy, **policy_kwargs):
+def get_actions(node, policy, **policy_kwargs):
     """Wrapper function for get actions with policy (guided search) or without (unguided)"""
+    env = node.state
+    if node.is_expanded: 
+        actions = [child.action for child in list(node.children.values())]
     if policy != None:
-        return get_actions_with_policy(env, policy, **policy_kwargs)
+        actions = get_actions_with_policy(env, policy, **policy_kwargs)
     else:
-        return get_all_actions(env)
+        actions = get_all_actions(env)
+    node.is_expanded = True
+    return actions
 
 def get_all_actions(env):
     """Get all actions from the `env` state"""
@@ -113,13 +119,14 @@ def uniform_cost_search(node,
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
-        actions = get_actions(node.state, **policy_kwargs)
+        actions = get_actions(node, **policy_kwargs)
         # Early stopping if root node has only one child.
         if node.parent is None and len(actions)==1:
             return [actions[0]], 0
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
+            node.children[action.tobytes()] = child
             frontier.put((child.path_cost, id(child), child))
 
 def a_star(node, 
