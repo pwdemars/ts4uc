@@ -37,13 +37,14 @@ def solve_day_ahead(env,
             path_cost=0)
 
     for t in range(env.episode_length):
+        s = time.time()
         terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
         path, cost = tree_search_func(node, 
                                       terminal_timestep, 
                                       net_demand_scenarios,
                                       **policy_kwargs)
         a_best = path[0]
-        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), cost)
+        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(cost, 2), round(time.time()-s, 2))
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
 
