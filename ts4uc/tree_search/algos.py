@@ -99,15 +99,11 @@ def get_solution(node):
         node = node.parent
     return s, path_cost
 
-def uniform_cost_search(env, 
+def uniform_cost_search(node, 
                         terminal_timestep, 
                         net_demand_scenarios,
                         **policy_kwargs):
     """Uniform cost search"""
-    node = Node(env=env,
-                parent=None,
-                action=None,
-                path_cost=0)
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
         return get_solution(node)
     frontier = queue.PriorityQueue()
@@ -126,15 +122,11 @@ def uniform_cost_search(env,
             child = get_child_node(node, action, net_demand_scenarios_t)
             frontier.put((child.path_cost, id(child), child))
 
-def a_star(env, 
+def a_star(node, 
            terminal_timestep, 
            net_demand_scenarios,
            **policy_kwargs):
-    """A* star"""
-    node = Node(env=env,
-                parent=None,
-                action=None,
-                path_cost=0)
+    """A*"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
         return get_solution(node)
     frontier = queue.PriorityQueue()
@@ -153,6 +145,32 @@ def a_star(env,
             child = get_child_node(node, action, net_demand_scenarios_t)
             heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
             frontier.put((child.path_cost + heuristic_cost, id(child), child))
+
+def rta_star(node,
+             terminal_timestep,
+             net_demand_scenarios,
+             **policy_kwargs):
+    """Real time A*"""
+    if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
+        return get_solution(node)
+    frontier = queue.PriorityQueue()
+    frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
+    while True:
+        assert frontier, "Failed to find a goal state"
+        node = frontier.get()[2]
+        if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
+            return get_solution(node)
+        actions = get_actions(node.state, **policy_kwargs)
+        # Early stopping if root node has only one child.
+        if node.parent is None and len(actions)==1:
+            return [actions[0]], 0
+        for action in actions:
+            net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
+            child = get_child_node(node, action, net_demand_scenarios_t)
+            if child.heuristic_cost is None:
+                horizon = child.state.episode_length - child.state.episode_timestep - 1
+                child.heuristic_cost = informed_search.heuristic(child, horizon)
+            frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
 def brute_force(env,
                 terminal_timestep,

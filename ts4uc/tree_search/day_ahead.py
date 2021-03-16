@@ -6,7 +6,7 @@ from rl4uc.environment import make_env
 from ts4uc.tree_search import scenarios
 from ts4uc.agents.ac_agent import ACAgent
 from ts4uc import helpers
-from ts4uc.tree_search.algos import uniform_cost_search, a_star, brute_force
+from ts4uc.tree_search.algos import Node, uniform_cost_search, a_star, rta_star, brute_force
 
 import numpy as np
 import argparse 
@@ -32,7 +32,11 @@ def solve_day_ahead(env,
 
     for t in range(env.episode_length):
         terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
-        path, cost = tree_search_func(env, 
+        node = Node(env=env,
+                    parent=None,
+                    action=None,
+                    path_cost=0)
+        path, cost = tree_search_func(node, 
                                       terminal_timestep, 
                                       net_demand_scenarios,
                                       **policy_kwargs)
@@ -129,7 +133,7 @@ if __name__ == "__main__":
         print("Unguided search")
 
     # Convert the tree_search_method argument to a function:
-    func_list = [uniform_cost_search, a_star, brute_force]
+    func_list = [uniform_cost_search, a_star, rta_star, brute_force]
     func_names = [f.__name__ for f in func_list]
     funcs_dict = dict(zip(func_names, func_list))
 
