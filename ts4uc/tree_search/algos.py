@@ -26,6 +26,7 @@ class Node(object):
         self.is_expanded = False
         self.step_cost = step_cost
         self.children = {}
+        self.heuristic_cost = None
 
 def get_actions(node, policy, **policy_kwargs):
     """Wrapper function for get actions with policy (guided search) or without (unguided)"""
@@ -151,15 +152,17 @@ def a_star(node,
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
-        actions = get_actions(node.state, **policy_kwargs)
+        actions = get_actions(node, **policy_kwargs)
         # Early stopping if root node has only one child.
         if node.parent is None and len(actions)==1:
             return [actions[0]], 0
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
-            heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
-            frontier.put((child.path_cost + heuristic_cost, id(child), child))
+            if child.heuristic_cost == None:
+                child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
+            node.children[action.tobytes()] = child
+            frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
 def rta_star(node,
              terminal_timestep,
@@ -182,9 +185,11 @@ def rta_star(node,
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
-            if child.heuristic_cost is None:
+            if not child.heuristic_cost:
                 horizon = child.state.episode_length - child.state.episode_timestep - 1
                 child.heuristic_cost = informed_search.heuristic(child, horizon)
+            else:
+                print("No need to calculate twice")
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
 def brute_force(env,

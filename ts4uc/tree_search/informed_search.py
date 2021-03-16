@@ -13,6 +13,7 @@ def is_feasible(state, horizon):
 		future_status = state.status + (t)*np.where(state.status >0, 1, -1) # Assume all generators are kept on where possible
 
 		available_generators = np.logical_or((-future_status >= state.t_min_down), state.commitment) # Determines the availability of generators as binary array
+
 		available_cap = np.dot(available_generators, state.max_output)
 
 		if available_cap < net_demand:
