@@ -33,6 +33,7 @@ def solve_day_ahead(env,
     node = Node(env=env,
             parent=None,
             action=None,
+            step_cost=0,
             path_cost=0)
 
     for t in range(env.episode_length):

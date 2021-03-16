@@ -18,12 +18,13 @@ import os
 
 class Node(object):
     """Node class for search trees"""
-    def __init__(self, env, parent, action, path_cost):
+    def __init__(self, env, parent, action, step_cost, path_cost):
         self.state = env
         self.parent = parent
         self.action = action
         self.path_cost = path_cost
         self.is_expanded = False
+        self.step_cost = step_cost
         self.children = {}
 
 def get_actions(node, policy, **policy_kwargs):
@@ -31,7 +32,7 @@ def get_actions(node, policy, **policy_kwargs):
     env = node.state
     if node.is_expanded: 
         actions = [child.action for child in list(node.children.values())]
-    if policy != None:
+    elif policy != None:
         actions = get_actions_with_policy(env, policy, **policy_kwargs)
     else:
         actions = get_all_actions(env)
@@ -81,6 +82,11 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True):
     
     The child node has `node` as its parent.
     """
+    if action.tobytes() in node.children:
+        child = node.children[action.tobytes()]
+        child.path_cost = node.path_cost + child.step_cost
+        return node.children[action.tobytes()]
+
     new_env = copy.deepcopy(node.state)
     _, reward, _ = new_env.step(action, deterministic=deterministic)
 
@@ -89,10 +95,12 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True):
     else:
         cost = scenarios.calculate_expected_costs(new_env, net_demand_scenarios)
 
+    # TODO: add step cost
     child = Node(env=new_env,
                 parent=node,
-                action=action, 
-                path_cost = node.path_cost + cost)
+                action=action,
+                step_cost=cost, 
+                path_cost=node.path_cost + cost)
     
     return child
 
@@ -216,7 +224,6 @@ def find_best_path(node, H, net_demand_scenarios, expansion_mode='guided', cost_
     if node.is_expanded is False:
         node.expansion_mode = expansion_mode # change the expansion mode: vanilla or guided
         node.expand_decision()
-        node.is_expanded = True
 
     if (node.depth_from_root() == 0) and (len(node.children) == 1):
         random_node = list(node.children.values())[0]
