@@ -117,8 +117,11 @@ def uniform_cost_search(env,
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
-        for action in get_actions(node.state, 
-                                  **policy_kwargs):
+        actions = get_actions(node.state, **policy_kwargs)
+        # Early stopping if root node has only one child.
+        if node.parent is None and len(actions)==1:
+            return [actions[0]], 0
+        for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
             frontier.put((child.path_cost, id(child), child))
@@ -141,8 +144,11 @@ def a_star(env,
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
-        for action in get_actions(node.state, 
-                                  **policy_kwargs):
+        actions = get_actions(node.state, **policy_kwargs)
+        # Early stopping if root node has only one child.
+        if node.parent is None and len(actions)==1:
+            return [actions[0]], 0
+        for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
             heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
