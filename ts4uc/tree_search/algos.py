@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ts4uc.tree_search import scenarios
+from ts4uc.tree_search import scenarios, expansion
+from ts4uc.tree_search import node as node_mod
 from rl4uc.environment import make_env
 from ts4uc.agents.ac_agent import ACAgent
 from ts4uc.tree_search.mcts.node import DecisionNode, DummyNode
@@ -16,122 +17,24 @@ import gc
 import time
 import os
 
-class Node(object):
-    """Node class for search trees"""
-    def __init__(self, env, parent, action, step_cost, path_cost):
-        self.state = env
-        self.parent = parent
-        self.action = action
-        self.path_cost = path_cost
-        self.is_expanded = False
-        self.step_cost = step_cost
-        self.children = {}
-        self.heuristic_cost = None
-
-def get_actions(node, policy, **policy_kwargs):
-    """Wrapper function for get actions with policy (guided search) or without (unguided)"""
-    env = node.state
-    if node.is_expanded: 
-        actions = [child.action for child in list(node.children.values())]
-    elif policy != None:
-        actions = get_actions_with_policy(env, policy, **policy_kwargs)
-    else:
-        actions = get_all_actions(env)
-    node.is_expanded = True
-    return actions
-
-def get_all_actions(env):
-    """Get all actions from the `env` state"""
-    constrained_gens = np.where(np.logical_or(env.must_on, env.must_off))
-    unconstrained_gens = np.delete(np.arange(env.num_gen), constrained_gens)
-
-    # All permutations of available generators
-    all_perms = np.array(list(itertools.product(range(2), repeat=unconstrained_gens.size)))
-
-    # Create action array 
-    actions = np.zeros((all_perms.shape[0], env.num_gen))
-    actions[:,constrained_gens] = env.commitment[constrained_gens]
-    actions[:,unconstrained_gens] = all_perms
-    
-    return actions
-
-def get_actions_with_policy(env, policy, **policy_kwargs):
-    """
-    Use a policy to get a state of actions for the `env` state.
-
-    This is used to implement `guided expansion`.
-    """
-    branching_threshold = policy_kwargs.get('branching_threshold', 0.05)
-    num_samples = policy_kwargs.get('num_samples', 1000)
-
-    action_dict, log_prob = policy.generate_multiple_actions_batched(env, env.state, num_samples, branching_threshold)
-    
-    # Add the do nothing action
-    action = np.where(env.status > 0, 1, 0)
-    action_id = ''.join(str(int(i)) for i in action)
-    action_id = int(action_id, 2)
-    action_dict.update({action_id: action})
-
-    actions = np.array(list(action_dict.values()))
-
-    return actions
-
-def get_child_node(node, action, net_demand_scenarios=None, deterministic=True):
-    """
-    Return a child node corresponding to taking `action` from the state 
-    corresponding to `node`.
-    
-    The child node has `node` as its parent.
-    """
-    if action.tobytes() in node.children:
-        child = node.children[action.tobytes()]
-        child.path_cost = node.path_cost + child.step_cost
-        return node.children[action.tobytes()]
-
-    new_env = copy.deepcopy(node.state)
-    _, reward, _ = new_env.step(action, deterministic=deterministic)
-
-    if net_demand_scenarios is None:
-        cost = -reward
-    else:
-        cost = scenarios.calculate_expected_costs(new_env, net_demand_scenarios)
-
-    # TODO: add step cost
-    child = Node(env=new_env,
-                parent=node,
-                action=action,
-                step_cost=cost, 
-                path_cost=node.path_cost + cost)
-    
-    return child
-
-def get_solution(node):
-    """Return the solution path (list of actions) leading to node."""
-    s = []
-    path_cost = node.path_cost
-    while node.parent is not None:
-        s.insert(0, node.action)
-        node = node.parent
-    return s, path_cost
-
 def uniform_cost_search(node, 
                         terminal_timestep, 
                         net_demand_scenarios,
                         **policy_kwargs):
     """Uniform cost search"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
-        return get_solution(node)
+        return node_mod.get_solution(node)
     frontier = queue.PriorityQueue()
     frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
     while True:
         assert frontier, "Failed to find a goal state"
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
-            return get_solution(node)
-        actions = get_actions(node, **policy_kwargs)
+            return node_mod.get_solution(node)
+        actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = get_child_node(node, action, net_demand_scenarios_t)
+            child = expansion.get_child_node(node, action, net_demand_scenarios_t)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost, id(child), child))
 
@@ -145,18 +48,18 @@ def a_star(node,
            **policy_kwargs):
     """A*"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
-        return get_solution(node)
+        return node_mod.get_solution(node)
     frontier = queue.PriorityQueue()
     frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
     while True:
         assert frontier, "Failed to find a goal state"
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
-            return get_solution(node)
-        actions = get_actions(node, **policy_kwargs)
+            return node_mod.get_solution(node)
+        actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = get_child_node(node, action, net_demand_scenarios_t)
+            child = expansion.get_child_node(node, action, net_demand_scenarios_t)
             if child.heuristic_cost == None:
                 child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
             node.children[action.tobytes()] = child
@@ -172,18 +75,18 @@ def rta_star(node,
              **policy_kwargs):
     """Real time A*"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
-        return get_solution(node)
+        return node_mod.get_solution(node)
     frontier = queue.PriorityQueue()
     frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
     while True:
         assert frontier, "Failed to find a goal state"
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
-            return get_solution(node)
-        actions = get_actions(node, **policy_kwargs)
+            return node_mod.get_solution(node)
+        actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = get_child_node(node, action, net_demand_scenarios_t)
+            child = expansion.get_child_node(node, action, net_demand_scenarios_t)
             if child.heuristic_cost == None:
                 horizon = child.state.episode_length - child.state.episode_timestep - 1 # Run heuristic to the end of the episode
                 child.heuristic_cost = informed_search.heuristic(child, horizon)
@@ -249,3 +152,8 @@ def find_best_path(node, H, net_demand_scenarios, expansion_mode='guided', cost_
     path.insert(0, node.environment.commitment)
 
     return path, cost + node.expected_cost
+
+def backup(node):
+    while node.parent is not None:
+        node.num_visits += 1
+        node = node.parent

@@ -3,10 +3,10 @@
 
 from rl4uc.environment import make_env
 
-from ts4uc.tree_search import scenarios
+from ts4uc.tree_search import scenarios, node
 from ts4uc.agents.ac_agent import ACAgent
 from ts4uc import helpers
-from ts4uc.tree_search.algos import Node, uniform_cost_search, a_star, rta_star, brute_force
+from ts4uc.tree_search.algos import uniform_cost_search, a_star, rta_star, brute_force
 
 import numpy as np
 import argparse 
@@ -30,7 +30,7 @@ def solve_day_ahead(env,
     env.reset()
     final_schedule = np.zeros((env.episode_length, env.num_gen))
 
-    node = Node(env=env,
+    root = node.Node(env=env,
             parent=None,
             action=None,
             step_cost=0,
@@ -39,17 +39,18 @@ def solve_day_ahead(env,
     for t in range(env.episode_length):
         s = time.time()
         terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
-        path, cost = tree_search_func(node, 
+        path, cost = tree_search_func(root, 
                                       terminal_timestep, 
                                       net_demand_scenarios,
                                       **policy_kwargs)
         a_best = path[0]
+
         print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(cost, 2), round(time.time()-s, 2))
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
 
-        node = node.children[a_best.tobytes()]
-        node.parent, node.path_cost = None, 0
+        root = root.children[a_best.tobytes()]
+        root.parent, root.path_cost = None, 0
 
         gc.collect()
         
