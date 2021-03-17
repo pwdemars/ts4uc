@@ -3,10 +3,10 @@
 
 import numpy as np
 
-def is_feasible(state, horizon):
+def check_lost_load(state, horizon):
 	"""Check if forecast demand can be met for the next H periods from state"""
 	if horizon == 0:
-		return True
+		return 0
 	horizon = min(horizon, max(state.gen_info.t_min_down.max(), abs(state.gen_info.t_min_down.min())))
 	for t in range(1,horizon+1):
 		net_demand = state.episode_forecast[state.episode_timestep+t] - state.episode_wind_forecast[state.episode_timestep+t] # Nominal demand for t+1th period ahead
@@ -17,13 +17,13 @@ def is_feasible(state, horizon):
 		available_cap = np.dot(available_generators, state.max_output)
 
 		if available_cap < net_demand:
-			return False
+			return np.inf
 
-	return True
+	return 0
 
-def heuristic(node, horizon):
+def heuristic(node, horizon, method='check_lost_load'):
 	"""Simple heuristic that gives np.inf if a node's state is infeasible, else 0"""
-	if is_feasible(node.state, horizon) == False:
-		return np.inf
+	if method=='check_lost_load':
+		return check_lost_load(node.state, horizon)
 	else:
-		return 0 
+		raise ValueError('{} is not a valid heuristic'.format(method))
