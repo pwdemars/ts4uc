@@ -178,18 +178,17 @@ def rta_star(node,
         node = frontier.get()[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
-        actions = get_actions(node.state, **policy_kwargs)
+        actions = get_actions(node, **policy_kwargs)
         # Early stopping if root node has only one child.
         if node.parent is None and len(actions)==1:
             return [actions[0]], 0
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
-            if not child.heuristic_cost:
-                horizon = child.state.episode_length - child.state.episode_timestep - 1
+            if child.heuristic_cost == None:
+                horizon = child.state.episode_length - child.state.episode_timestep - 1 # Run heuristic to the end of the episode
                 child.heuristic_cost = informed_search.heuristic(child, horizon)
-            else:
-                print("No need to calculate twice")
+            node.children[action.tobytes()] = child
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
 def brute_force(env,
