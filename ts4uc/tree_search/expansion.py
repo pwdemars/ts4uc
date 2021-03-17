@@ -3,6 +3,7 @@
 
 import numpy as np
 import copy
+import itertools
 
 from ts4uc.tree_search import scenarios
 from ts4uc.tree_search.node import Node
