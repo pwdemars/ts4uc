@@ -129,14 +129,15 @@ def uniform_cost_search(node,
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
         actions = get_actions(node, **policy_kwargs)
-        # Early stopping if root node has only one child.
-        if node.parent is None and len(actions)==1:
-            return [actions[0]], 0
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost, id(child), child))
+
+            # Early stopping if root has one child
+            if node.parent is None and len(actions) == 1:
+                return [actions[0]], 0
 
 def a_star(node, 
            terminal_timestep, 
@@ -153,9 +154,6 @@ def a_star(node,
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
         actions = get_actions(node, **policy_kwargs)
-        # Early stopping if root node has only one child.
-        if node.parent is None and len(actions)==1:
-            return [actions[0]], 0
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
@@ -163,6 +161,10 @@ def a_star(node,
                 child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
+
+            # Early stopping if root has one child
+            if node.parent is None and len(actions) == 1:
+                return [actions[0]], 0
 
 def rta_star(node,
              terminal_timestep,
@@ -179,9 +181,6 @@ def rta_star(node,
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return get_solution(node)
         actions = get_actions(node, **policy_kwargs)
-        # Early stopping if root node has only one child.
-        if node.parent is None and len(actions)==1:
-            return [actions[0]], 0
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = get_child_node(node, action, net_demand_scenarios_t)
@@ -190,6 +189,10 @@ def rta_star(node,
                 child.heuristic_cost = informed_search.heuristic(child, horizon)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
+
+            # Early stopping if root has one child
+            if node.parent is None and len(actions) == 1:
+                return [actions[0]], 0
 
 def brute_force(env,
                 terminal_timestep,
