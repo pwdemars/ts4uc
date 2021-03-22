@@ -44,7 +44,7 @@ def priority_list(state, horizon):
 	costs = np.dot(dispatch, state.gen_info.heat_rates).sum()
 	return costs
 
-def heuristic(node, horizon, method='priority_list'):
+def heuristic(node, horizon, method='check_lost_load'):
 	"""Simple heuristic that gives np.inf if a node's state is infeasible, else 0"""
 	if method=='check_lost_load':
 		return check_lost_load(node.state, horizon)
