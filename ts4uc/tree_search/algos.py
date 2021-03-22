@@ -60,8 +60,7 @@ def a_star(node,
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = expansion.get_child_node(node, action, net_demand_scenarios_t)
-            if child.heuristic_cost == None:
-                child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
+            child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 

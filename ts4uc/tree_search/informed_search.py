@@ -21,9 +21,34 @@ def check_lost_load(state, horizon):
 
 	return 0
 
-def heuristic(node, horizon, method='check_lost_load'):
+def priority_list(state, horizon): 
+
+	# Net demand forecast
+	demand = state.episode_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
+	wind = state.episode_wind_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
+	net_demand = demand - wind
+	# Get the cumulative sum of outputs, sorted by heat rates
+	maxs = state.gen_info.sort_values('heat_rates').max_output.values
+	cumsum = np.cumsum(maxs)
+	cumsum = np.insert(0,0,cumsum)
+	# Initialise the commitment schedule
+	dispatch = np.zeros((demand.size, maxs.size))
+	# Calculate the economic dispatch
+	for i, d in enumerate(net_demand):
+		m = np.where(cumsum > d)[0][0] # marginal generator
+		marginal_mwh = d - cumsum[m-1] # output of marginal generator
+		dispatch[i, :m+1] = maxs[:m+1] # full output for non-marginal generators
+		dispatch[i, m] = marginal_mwh # marginal_mwh for the marginal generator
+
+	# Calculate operating costs
+	costs = np.dot(dispatch, state.gen_info.heat_rates).sum()
+	return costs
+
+def heuristic(node, horizon, method='priority_list'):
 	"""Simple heuristic that gives np.inf if a node's state is infeasible, else 0"""
 	if method=='check_lost_load':
 		return check_lost_load(node.state, horizon)
+	if method=='priority_list':
+		return priority_list(node.state, horizon)
 	else:
 		raise ValueError('{} is not a valid heuristic'.format(method))
