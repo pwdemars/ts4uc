@@ -21,7 +21,7 @@ def solve_day_ahead(env,
                     horizon, 
                     net_demand_scenarios,
                     tree_search_func=uniform_cost_search, 
-                    **policy_kwargs):
+                    **params):
     """
     Solve a day rooted at env. 
     
@@ -42,7 +42,7 @@ def solve_day_ahead(env,
         path, cost = tree_search_func(root, 
                                       terminal_timestep, 
                                       net_demand_scenarios,
-                                      **policy_kwargs)
+                                      **params)
         a_best = path[0]
 
         print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(cost, 2), round(time.time()-s, 2))
@@ -86,9 +86,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # For HPC purposes, allow 'none' to be passed as arg to policy_filename
-    if args.policy_filename == "none": args.policy_filename = None
-    if args.policy_params_fn == "none": args.policy_params_fn = None
     if args.branching_threshold == -1: args.branching_threshold = None
 
     # Create results directory

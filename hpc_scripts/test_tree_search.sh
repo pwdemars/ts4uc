@@ -14,6 +14,7 @@ horizon=$5
 branching_threshold=$6
 tree_search_func_name=$7
 paramfile=$8
+heuristic_method=${9:-none}
 
 number=$SGE_TASK_ID
 
@@ -26,5 +27,15 @@ module load python3/3.7
 
 cd $TMPDIR
 
-python $HOME/ts4uc/ts4uc/tree_search/day_ahead.py --save_dir $save_dir --policy_params_fn $params_filename --env_params_fn $env_params_filename --policy_filename $policy_filename --test_data $test_data --branching_threshold $branching_threshold --horizon $horizon --num_scenarios 100 --tree_search_func_name $tree_search_func_name --seed 1
+python $HOME/ts4uc/ts4uc/tree_search/day_ahead.py --save_dir $save_dir \\
+												  --policy_params_fn $params_filename \\
+												  --env_params_fn $env_params_filename \\
+												  --policy_filename $policy_filename \\
+												  --test_data $test_data \\
+												  --branching_threshold $branching_threshold \\
+												  --horizon $horizon \\
+												  --num_scenarios 100 \\
+												  --tree_search_func_name $tree_search_func_name \\
+												  --heuristic_method $heuristic_method \\
+												  --seed 1
 

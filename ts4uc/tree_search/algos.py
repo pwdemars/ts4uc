@@ -17,6 +17,8 @@ import gc
 import time
 import os
 
+DEFAULT_HEURISTIC_METHOD='check_lost_load'
+
 def uniform_cost_search(node, 
                         terminal_timestep, 
                         net_demand_scenarios,
@@ -45,6 +47,7 @@ def uniform_cost_search(node,
 def a_star(node, 
            terminal_timestep, 
            net_demand_scenarios,
+           heuristic_method,
            **policy_kwargs):
     """A*"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
@@ -60,7 +63,7 @@ def a_star(node,
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
             child = expansion.get_child_node(node, action, net_demand_scenarios_t)
-            child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep)
+            child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep, heuristic_method)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
@@ -71,6 +74,7 @@ def a_star(node,
 def rta_star(node,
              terminal_timestep,
              net_demand_scenarios,
+             heuristic_method,
              **policy_kwargs):
     """Real time A*"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
@@ -88,7 +92,7 @@ def rta_star(node,
             child = expansion.get_child_node(node, action, net_demand_scenarios_t)
             if child.heuristic_cost == None:
                 horizon = child.state.episode_length - child.state.episode_timestep - 1 # Run heuristic to the end of the episode
-                child.heuristic_cost = informed_search.heuristic(child, horizon)
+                child.heuristic_cost = informed_search.heuristic(child, horizon, heuristic_method)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
@@ -99,6 +103,7 @@ def rta_star(node,
 def brute_force(env,
                 terminal_timestep,
                 net_demand_scenarios,
+                heuristic_method,
                 **kwargs):
     policy_network = kwargs.get('policy', None)
     H = terminal_timestep - env.episode_timestep 
