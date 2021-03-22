@@ -59,15 +59,15 @@ def solve_day_ahead(env,
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Solve a single day with tree search')
-    parser.add_argument('--save_dir', type=str, required=True,
+    parser.add_argument('--save_dir', '-s', type=str, required=True,
                         help='Directory to save results')
-    parser.add_argument('--policy_params_fn', type=str, required=False,
+    parser.add_argument('--policy_params_fn', '-pp', type=str, required=False,
                         help='Filename for parameters')
-    parser.add_argument('--env_params_fn', type=str, required=True,
+    parser.add_argument('--env_params_fn', '-e', type=str, required=True,
                         help='Filename for environment parameters, including ARMAs, number of generators, dispatch frequency')
-    parser.add_argument('--policy_filename', type=str, required=False,
+    parser.add_argument('--policy_filename', '-pf', type=str, required=False,
                         help="Filename for policy [.pt]. Set to 'none' or omit this argument to train from scratch", default=None)
-    parser.add_argument('--test_data', type=str, required=True,
+    parser.add_argument('--test_data', '-t', type=str, required=True,
                         help='Location of problem file [.csv]')
     parser.add_argument('--num_samples', type=int, required=False, default=1000,
                         help='Number of times to sample running the schedules through the environment')
@@ -81,6 +81,8 @@ if __name__ == "__main__":
                         help='Number of scenarios to use when calculating expected costs')
     parser.add_argument('--tree_search_func_name', type=str, required=False, default='uniform_cost_search',
                         help='Tree search algorithm to use')
+    parser.add_argument('--heuristic_method', type=str, required=False, default='check_lost_load',
+                        help='Heuristic method to use (when using A* or its variants)')
 
     args = parser.parse_args()
 

@@ -22,7 +22,13 @@ def check_lost_load(state, horizon):
 	return 0
 
 def priority_list(state, horizon): 
+	"""
+	A simple priority list algorithm for estimating operating costs.
 
+	This does not obey any operating constraints and only approximates the economic dispatch.
+
+	TODO: add lost load check
+	"""
 	# Net demand forecast
 	demand = state.episode_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
 	wind = state.episode_wind_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
@@ -44,11 +50,19 @@ def priority_list(state, horizon):
 	costs = np.dot(dispatch, state.gen_info.heat_rates).sum()
 	return costs
 
-def heuristic(node, horizon, method='check_lost_load'):
-	"""Simple heuristic that gives np.inf if a node's state is infeasible, else 0"""
+def pl_plus_ll(state, horizon):
+	if check_lost_load(state, horizon) == np.inf:
+		return np.inf
+	else:
+		return priority_list(state, horizon)
+
+def heuristic(node, horizon, method='pl_plus_ll'):
+	"""Simple heuristic that givees np.inf if a node's state is infeasible, else 0"""
 	if method=='check_lost_load':
 		return check_lost_load(node.state, horizon)
-	if method=='priority_list':
+	elif method=='priority_list':
 		return priority_list(node.state, horizon)
+	elif method=='pl_plus_ll':
+		return pl_plus_ll(node.state, horizon)
 	else:
 		raise ValueError('{} is not a valid heuristic'.format(method))
