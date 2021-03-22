@@ -4,7 +4,7 @@
 date=$(date +"%y-%m-%d")
 
 # Different for 30 gens! 
-for g in 5 10 20;
+for g in 5 10 20 30;
 	do for tree_search_func_name in a_star rta_star;
 		do for H in 2 4 6; 
 			do for rho in 0.05;
