@@ -10,9 +10,9 @@ for g in 5 10 20;
 			do for rho in 0.05;
 				do for heuristic_method in "check_lost_load" "priority_list" "pl_plus_ll";
 					do qsub -l h_rt=12:00:00 test_tree_search.sh $HOME/Scratch/results/${date}/guided_${tree_search_func_name}/g5/feb4_g5_d30_v1_h${h}_p${rho}_${heuristic_method} \
-																 $HOME/AISO_HPC/feb4/g${g}/g${g}_d30_v1.json \
+																 $HOME/AISO_HPC/best_policies/g${g}/params.json \
 																 $HOME/AISO_HPC/mar14/${g}_env_params.json \
-																 $HOME/Scratch/results/feb4_g${g}_d30_v1/ac_final.pt \
+																 $HOME/AISO_HPC/best_policies/g${g}/ac_final.pt \
 																 ${H} \
 																 ${rho} \
 																 ${tree_search_func_name} \
