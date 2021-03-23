@@ -17,6 +17,6 @@ mkdir $HOME/Scratch/results/$save_dir
 
 cd $TMPDIR
 
-python $HOME/AISO_HPC/AISO/train_ac.py --save_dir $save_dir --params_fn $params_filename --env_params_fn $env_params_filename --num_procs $num_procs --num_epochs $num_epochs
+python $HOME/ts4uc/ts4uc/agents/train_ac.py --save_dir $save_dir --params_fn $params_filename --env_params_fn $env_params_filename --num_procs $num_procs --num_epochs $num_epochs
 
 tar zcvf $HOME/Scratch/results/$save_dir/results.tar.gz $TMPDIR
