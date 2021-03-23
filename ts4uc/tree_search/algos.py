@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ts4uc.tree_search import scenarios, expansion
+from ts4uc.tree_search import scenarios, expansion, informed_search
 from ts4uc.tree_search import node as node_mod
 from rl4uc.environment import make_env
 from ts4uc.agents.ac_agent import ACAgent
 from ts4uc.tree_search.mcts.node import DecisionNode, DummyNode
-import informed_search
+
 
 import numpy as np
 import pandas as pd
