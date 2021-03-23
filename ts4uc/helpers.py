@@ -65,7 +65,7 @@ def get_paths(node, paths=None, current_path=None):
     
     return paths
 
-def process_observation_new(obs, env, forecast_horizon, forecast_errors=False):
+def process_observation(obs, env, forecast_horizon, forecast_errors=False):
     timestep = obs['timestep']
     status_norm = rl4uc_helpers.cap_and_normalise_status(obs['status'], env)
     demand_forecast = obs['demand_forecast'][timestep+1:]
@@ -98,53 +98,6 @@ def process_observation_new(obs, env, forecast_horizon, forecast_errors=False):
                                     timestep_norm))
 
     return processed_obs
-
-
-
-
-def process_observation(obs, forecast_horizon, capacity, forecast_errors=False):
-    """
-    Process an observation for state and policy networks. 
-    
-    The main purposes of this function are to extend wind and demand forecasts
-    if necessary, and to scale down the forecasts. 
-    """
-    x = obs['status_norm']
-        
-    # extend demand forecast if shorter than forecast_horizon 
-    if len(obs['demand_forecast']) < forecast_horizon:
-        obs['demand_forecast'] = np.append(obs['demand_forecast'], 
-                                                np.repeat(obs['demand_forecast'][-1], 
-                                                          forecast_horizon-len(obs['demand_forecast'])))
-    
-    # add demand forecast to state vector 
-    d = obs['demand_forecast'][:forecast_horizon]
-    d_norm = d/capacity # scale to 0 <= d_norm <= 1
-    x = np.append(x, d_norm)
-    
-    if forecast_errors:
-        # add demand forecast error
-        x = np.append(x, obs['demand_errors'])
-    
-    # extend wind forecast if shorter than forecast_horizon
-    if len(obs['wind_forecast']) < forecast_horizon:
-        obs['wind_forecast'] = np.append(obs['wind_forecast'], 
-                                                np.repeat(obs['wind_forecast'][-1], 
-                                                          forecast_horizon-len(obs['wind_forecast'])))
-        
-    # add wind forecast to state vector
-    w = obs['wind_forecast'][:forecast_horizon]
-    w_norm = w/capacity # scale to 0 <= w_norm <= 1
-    x = np.append(x, w_norm)
-    
-    if forecast_errors:
-        # add wind forecast error
-        x = np.append(x, obs['wind_errors'])
-
-    # add the normalised timestep (between 0--1)
-    x = np.append(x, obs['timestep_norm'])
-    
-    return x 
 
 def calculate_gamma(credit_assignment_1hr, dispatch_freq_mins):
     """
