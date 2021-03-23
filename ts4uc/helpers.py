@@ -65,6 +65,43 @@ def get_paths(node, paths=None, current_path=None):
     
     return paths
 
+def process_observation_new(obs, env, forecast_horizon, forecast_errors=False):
+    timestep = obs['timestep']
+    status_norm = rl4uc_helpers.cap_and_normalise_status(obs['status'], env)
+    demand_forecast = obs['demand_forecast'][timestep+1:]
+    wind_forecast = obs['wind_forecast'][timestep+1:]
+
+    # Repeat the final value if forecast does not reach the horizon
+    if len(demand_forecast) < forecast_horizon:
+        demand_forecast = np.append(demand_forecast,
+                                    np.repeat(demand_forecast[-1],
+                                              forecast_horizon-len(demand_forecast)))
+    demand_forecast = demand_forecast[:forecast_horizon]
+
+    # Repeat the final value if forecast does not reach the horizon
+    if len(wind_forecast) < forecast_horizon:
+        wind_forecast = np.append(wind_forecast,
+                                    np.repeat(wind_forecast[-1],
+                                              forecast_horizon-len(wind_forecast)))
+    wind_forecast = wind_forecast[:forecast_horizon]
+
+    # Scale the demand and wind 
+    demand_norm = demand_forecast / env.max_demand
+    wind_norm = wind_forecast / env.max_demand
+
+    # Scale the timestep
+    timestep_norm = np.array(timestep / env.episode_length).reshape(1,)
+
+    processed_obs = np.concatenate((status_norm,
+                                    demand_norm,
+                                    wind_norm,
+                                    timestep_norm))
+
+    return processed_obs
+
+
+
+
 def process_observation(obs, forecast_horizon, capacity, forecast_errors=False):
     """
     Process an observation for state and policy networks. 

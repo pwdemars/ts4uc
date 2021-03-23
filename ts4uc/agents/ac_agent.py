@@ -15,9 +15,10 @@ import time
 import numpy as np
 import scipy.signal as signal
 
-from ts4uc.helpers import process_observation, calculate_gamma
+from ts4uc.helpers import calculate_gamma
+from ts4uc.helpers import process_observation_new as process_observation
 
-import rl4uc.helpers as rl4uc_helpers
+# import rl4uc.helpers as rl4uc_helpers
 
 DEFAULT_ENTROPY_COEF = 0
 DEFAULT_PPO_EPSILON = 0.2
@@ -142,7 +143,7 @@ class ACAgent(nn.Module):
         
         self.observe_forecast_errors = kwargs.get('observe_forecast_errors', DEFAULT_OBSERVE_FORECAST_ERRORS)
         
-        obs_size = len(rl4uc_helpers.process_observation(env.state, self.env, self.observe_forecast_errors))
+        obs_size = len(process_observation(env.state, self.env, self.forecast_horizon, self.observe_forecast_errors))
         self.n_in_ac = 2*env.num_gen + obs_size
         self.n_in_cr = obs_size
         
@@ -201,7 +202,7 @@ class ACAgent(nn.Module):
         return self.output_cr(x)
     
     def get_value(self, obs):
-        x = rl4uc_helpers.process_observation(obs, self.env, self.observe_forecast_errors)
+        x = process_observation(obs, self.env, self.forecast_horizon, self.observe_forecast_errors)
         x = torch.as_tensor(x).float().to(self.device)
         return self.forward_cr(x), x
         
@@ -214,7 +215,7 @@ class ACAgent(nn.Module):
             Sample action from softmax, change action[i]
             Change part of action part of state 
         """
-        x = rl4uc_helpers.process_observation(obs, self.env, self.observe_forecast_errors)
+        x = process_observation(obs, self.env, self.forecast_horizon, self.observe_forecast_errors)
  
         # Init action with constraints
         action = np.zeros(env.num_gen, dtype=int)
@@ -277,7 +278,7 @@ class ACAgent(nn.Module):
         the generate_multiple_actions and generate_action functions.
         """
         # Process observation, either extending or truncating the forecasts to correct length
-        x = rl4uc_helpers.process_observation(obs, self.env, self.observe_forecast_errors)
+        x = process_observation(obs, self.env, self.forecast_horizon, self.observe_forecast_errors)
 
         # Init action with constraints
         action = np.zeros(env.num_gen, dtype=int)
