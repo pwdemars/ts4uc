@@ -141,8 +141,8 @@ class ACAgent(nn.Module):
         self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs', 12) * 60 / self.dispatch_freq_mins)
         self.env = env
         
-        self.obs_processor = processor.DayAheadProcessor(env, forecast_errors=kwargs.get('observe_forecast_errors', DEFAULT_OBSERVE_FORECAST_ERRORS))
-        # self.obs_processor = processor.LimitedHorizonProcessor(env, forecast_horizon=self.forecast_horizon)
+        # self.obs_processor = processor.DayAheadProcessor(env, forecast_errors=kwargs.get('observe_forecast_errors', DEFAULT_OBSERVE_FORECAST_ERRORS))
+        self.obs_processor = processor.LimitedHorizonProcessor(env, forecast_horizon=self.forecast_horizon)
         
         self.n_in_ac = 2*env.num_gen + self.obs_processor.obs_size
         self.n_in_cr = self.obs_processor.obs_size
