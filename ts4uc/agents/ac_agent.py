@@ -27,6 +27,7 @@ DEFAULT_GAMMA = 0.95
 DEFAULT_MINIBATCH_SIZE = 256
 DEFAULT_NUM_EPOCHS = 10
 DEFAULT_OBSERVE_FORECAST_ERRORS = False
+DEFAULT_OBSERVATION_PROCESSOR = 'LimitedHorizonProcessor'
 
 def discount_cumsum(x, discount):
     """
@@ -141,8 +142,12 @@ class ACAgent(nn.Module):
         self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs', 12) * 60 / self.dispatch_freq_mins)
         self.env = env
         
-        # self.obs_processor = processor.DayAheadProcessor(env, forecast_errors=kwargs.get('observe_forecast_errors', DEFAULT_OBSERVE_FORECAST_ERRORS))
-        self.obs_processor = processor.LimitedHorizonProcessor(env, forecast_horizon=self.forecast_horizon)
+        if kwargs.get('observation_processor', DEFAULT_OBSERVATION_PROCESSOR) == 'LimitedHorizonProcessor':
+            self.obs_processor = processor.LimitedHorizonProcessor(env, forecast_horizon=self.forecast_horizon)
+        elif kwargs.get('observation_processor', DEFAULT_OBSERVATION_PROCESSOR) == 'DayAheadProcessor':
+            self.obs_processor = processor.DayAheadProcessor(env, forecast_errors=kwargs.get('observe_forecast_errors', DEFAULT_OBSERVE_FORECAST_ERRORS))
+        else:
+            raise ValueError(f"{kwargs.get('observation_processor')} is not a valid observation processor")
         
         self.n_in_ac = 2*env.num_gen + self.obs_processor.obs_size
         self.n_in_cr = self.obs_processor.obs_size
