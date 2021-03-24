@@ -29,6 +29,8 @@ def priority_list(state, horizon):
 
 	TODO: add lost load check
 	"""
+	time_interval = state.dispatch_freq_mins/60
+
 	# Net demand forecast
 	demand = state.episode_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
 	wind = state.episode_wind_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
@@ -47,7 +49,7 @@ def priority_list(state, horizon):
 		dispatch[i, m] = marginal_mwh # marginal_mwh for the marginal generator
 
 	# Calculate operating costs
-	costs = np.dot(dispatch, state.gen_info.heat_rates).sum()
+	costs = np.dot(dispatch, state.gen_info.heat_rates).sum() * time_interval
 
 	return costs
 
