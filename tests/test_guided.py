@@ -52,11 +52,6 @@ def test_uniform_cost_search():
 	# Generate scenarios for demand and wind errors
 	scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
 
-
-	# demand_errors, wind_errors = get_scenarios(env, NUM_SCENARIOS, env.episode_length)
-	# scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
-	# scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
-
 	schedule_result = solve_day_ahead(env=env, 
 	                                  net_demand_scenarios=scenarios, 
 	                                  tree_search_func=uniform_cost_search,
