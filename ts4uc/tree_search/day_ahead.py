@@ -3,9 +3,11 @@
 
 from rl4uc.environment import make_env
 
-from ts4uc.tree_search import scenarios, node
-from ts4uc.agents.ac_agent import ACAgent
+from ts4uc.tree_search import node
 from ts4uc import helpers
+
+from ts4uc.tree_search.scenarios import get_net_demand_scenarios
+from ts4uc.agents.ac_agent import ACAgent
 from ts4uc.tree_search.algos import uniform_cost_search, a_star, rta_star, brute_force
 
 import numpy as np
@@ -123,9 +125,7 @@ if __name__ == "__main__":
     print(env.num_gen)
 
     # Generate scenarios for demand and wind errors
-    demand_errors, wind_errors = scenarios.get_scenarios(env, args.num_scenarios, env.episode_length)
-    scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
-    scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
+    scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
 
     # Load policy 
     if args.policy_filename is not None:

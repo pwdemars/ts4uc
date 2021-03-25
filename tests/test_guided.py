@@ -3,10 +3,10 @@
 
 from rl4uc.environment import make_env
 
+from ts4uc.tree_search.scenarios import get_net_demand_scenarios
 from ts4uc.tree_search.day_ahead import solve_day_ahead
 from ts4uc.tree_search.algos import uniform_cost_search
 from ts4uc.agents.ac_agent import ACAgent
-from ts4uc.tree_search.scenarios import get_scenarios
 from ts4uc import helpers
 
 import numpy as np 
@@ -50,9 +50,12 @@ def test_uniform_cost_search():
 	policy.eval()
 
 	# Generate scenarios for demand and wind errors
-	demand_errors, wind_errors = get_scenarios(env, NUM_SCENARIOS, env.episode_length)
-	scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
-	scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
+	scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
+
+
+	# demand_errors, wind_errors = get_scenarios(env, NUM_SCENARIOS, env.episode_length)
+	# scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
+	# scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
 
 	schedule_result = solve_day_ahead(env=env, 
 	                                  net_demand_scenarios=scenarios, 

@@ -4,7 +4,7 @@
 import numpy as np
 import copy
 
-def get_scenarios(env, N, horizon):
+def sample_errors(env, N, horizon):
     """
     Calculate N realisations of net demand for demand and wind forecast errors
     using ARMA processes that may be at t>=0. 
@@ -42,3 +42,8 @@ def calculate_expected_costs(env, net_demands):
     exp_cost += env.start_cost
 
     return exp_cost
+
+def get_net_demand_scenarios(profile_df, env, num_scenarios):
+    demand_errors, wind_errors = sample_errors(env, num_scenarios, env.episode_length)
+    scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
+    return np.clip(scenarios, env.min_demand, env.max_demand)
