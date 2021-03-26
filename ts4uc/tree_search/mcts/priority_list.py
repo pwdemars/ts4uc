@@ -82,7 +82,7 @@ def pl_senjyu(env, lookahead):
     # Sort gen_info by heat rate
     gen_info = env.gen_info
     gen_info['status'] = env.status
-    gen_info_sorted = gen_info.sort_values(by='heat_rates')
+    gen_info_sorted = gen_info.sort_values(by='min_fuel_cost')
     num_gen = len(gen_info_sorted)
     
     # Create current run length encoding for current status
@@ -242,7 +242,7 @@ def run_PL(node):
     len_day = 24 - env.episode_timestep
     uc = pl_senjyu(env, 
                    env.all_forecast[env.episode_timestep+1:],
-                   node.environment.heat_rates)
+                   node.environment.min_fuel_cost)
     uc_h = np.array(uc).transpose()
     dispatch = []
     ens = []
@@ -270,7 +270,7 @@ def run_PL_new(env, lookahead):
     if env.is_feasible() is False:
         return -env.min_reward * demand.size
     
-    gen_info_sorted = env.gen_info.sort_values(by='heat_rates')
+    gen_info_sorted = env.gen_info.sort_values(by='min_fuel_cost')
     caps = np.cumsum(gen_info_sorted.max_output.values)[:-1]
     
     uc_schedule = np.array(np.array([demand < c for c in caps]))
@@ -294,7 +294,7 @@ def run_PL_new(env, lookahead):
     residual_load = demand - np.sum(economic_dispatch, axis=1)
     economic_dispatch[marginal_gens] = residual_load
     
-    fc = np.sum(economic_dispatch * gen_info_sorted.heat_rates.values * env.dispatch_resolution)
+    fc = np.sum(economic_dispatch * gen_info_sorted.min_fuel_cost.values * env.dispatch_resolution)
     
     return fc
     
@@ -309,7 +309,7 @@ def run_PL_senjyu(env, lookahead):
     
     else:
         demand = env.all_forecast[env.episode_timestep+1: env.episode_timestep+1+lookahead]
-        gen_info_sorted = env.gen_info.sort_values(by='heat_rates')
+        gen_info_sorted = env.gen_info.sort_values(by='min_fuel_cost')
         
         # Run Senjyu to get binary schedule
         uc_schedule = pl_senjyu(env, lookahead).T
@@ -330,7 +330,7 @@ def run_PL_senjyu(env, lookahead):
         residual_load = demand - np.sum(economic_dispatch, axis=1)
         economic_dispatch[marginal_gens] = residual_load
         
-        fc = np.sum(economic_dispatch * gen_info_sorted.heat_rates.values * env.dispatch_resolution)
+        fc = np.sum(economic_dispatch * gen_info_sorted.min_fuel_cost.values * env.dispatch_resolution)
         
         return fc
         
@@ -349,7 +349,7 @@ def run_PL_endless(env, lookahead):
     """
     uc = pl_senjyu(env, 
                    env.all_forecast[env.episode_timestep+1:env.episode_timestep+lookahead+1],
-                   env.heat_rates)
+                   env.min_fuel_cost)
     
     uc_h = np.array(uc).transpose()
     dispatch = []
@@ -386,7 +386,7 @@ def run_PL_new2(env, lookahead):
     if env.is_feasible() is False:
         return -env.min_reward*demand.size
         
-    gen_info_sorted = env.gen_info.sort_values(by='heat_rates')
+    gen_info_sorted = env.gen_info.sort_values(by='min_fuel_cost')
  
     uc_schedule = np.zeros([env.num_gen, demand.size])
     free_generators = np.zeros([env.num_gen, demand.size])
@@ -446,7 +446,7 @@ def run_PL_new3(env, lookahead):
     if env.is_feasible() is False:
         return -env.min_reward * demand.size
 
-    gen_info_sorted = env.gen_info.sort_values(by='heat_rates')
+    gen_info_sorted = env.gen_info.sort_values(by='min_fuel_cost')
     
     # total number of periods: 
     num_periods = demand.size
@@ -481,14 +481,14 @@ def run_PL_new3(env, lookahead):
     economic_dispatch[marginal_gens] = residual_load
     
     # Fuel cost up to last period
-    fuel_cost = np.sum(economic_dispatch[:-1] * gen_info_sorted.heat_rates.values * 1)
+    fuel_cost = np.sum(economic_dispatch[:-1] * gen_info_sorted.min_fuel_cost.values * 1)
     
     # Last period fuel cost: is a normal period if total periods divides exactly
     # into step_size, else multiply by remaining_periods/step_size. 
     if remaining_periods == 0:
-        last_fuel_cost = np.sum(economic_dispatch[-1] * gen_info_sorted.heat_rates.values * 1)
+        last_fuel_cost = np.sum(economic_dispatch[-1] * gen_info_sorted.min_fuel_cost.values * 1)
     else:
-        last_fuel_cost = np.sum(economic_dispatch[-1] * gen_info_sorted.heat_rates.values * (remaining_periods / step_size))
+        last_fuel_cost = np.sum(economic_dispatch[-1] * gen_info_sorted.min_fuel_cost.values * (remaining_periods / step_size))
     
     return fuel_cost + last_fuel_cost
 
@@ -508,7 +508,7 @@ def run_PL_all(env):
     MARGIN = 0.2
     reserve = demand * (1+MARGIN)
     
-    gen_info_sorted = env.gen_info.sort_values(by='heat_rates')
+    gen_info_sorted = env.gen_info.sort_values(by='min_fuel_cost')
     caps = np.cumsum(gen_info_sorted.max_output.values)[:-1]
     
     uc_schedule = np.array(np.array([demand < c for c in caps]))
@@ -532,7 +532,7 @@ def run_PL_all(env):
     residual_load = demand - np.sum(economic_dispatch, axis=1)
     economic_dispatch[marginal_gens] = residual_load
     
-    fc = np.sum(economic_dispatch * gen_info_sorted.heat_rates.values * env.dispatch_resolution, axis=1)
+    fc = np.sum(economic_dispatch * gen_info_sorted.min_fuel_cost.values * env.dispatch_resolution, axis=1)
     
     return fc
 
