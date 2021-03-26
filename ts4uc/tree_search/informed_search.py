@@ -62,6 +62,9 @@ def advanced_priority_list(state, horizon):
 	
 	In this version, generator constraints must be obeyed
 	"""
+	if horizon == 0:
+		return 0
+
 	time_interval = state.dispatch_freq_mins/60
 
 	# Sort to priority list order 
@@ -115,8 +118,14 @@ def advanced_priority_list(state, horizon):
 							  np.sum(gen_info_sorted.min_output.values[online_gens]))
 		
 	fuel_cost = np.dot(weighted_avg_hr, demand) * time_interval
+
+	# Add a lost load cost if res > 0
+	if res > 0: 
+		lost_load_cost = res * state.voll * time_interval
+	else:
+		lost_load_cost = 0
 	
-	return fuel_cost + start_cost
+	return fuel_cost + start_cost + lost_load_cost
 
 def pl_plus_ll(state, horizon):
 	if check_lost_load(state, horizon) == np.inf:
