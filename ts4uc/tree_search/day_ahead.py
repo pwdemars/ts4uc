@@ -47,9 +47,9 @@ def solve_day_ahead(env,
                                       **params)
         a_best = path[0]
 
-        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(cost, 2), round(time.time()-s, 2))
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
+        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(cost, 2), round(time.time()-s, 2))
 
         root = root.children[a_best.tobytes()]
         root.parent, root.path_cost = None, 0
