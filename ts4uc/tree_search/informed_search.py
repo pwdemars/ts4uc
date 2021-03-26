@@ -32,7 +32,7 @@ def priority_list(state, horizon):
 	time_interval = state.dispatch_freq_mins/60
 
 	# Sort to priority list order 
-	gen_info = state.gen_info.sort_values('heat_rates')
+	gen_info = state.gen_info.sort_values('min_fuel_cost')
 
 	# Net demand forecast
 	demand = state.episode_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
@@ -52,7 +52,7 @@ def priority_list(state, horizon):
 		dispatch[i, m] = marginal_mwh # marginal_mwh for the marginal generator
 
 	# Calculate operating costs
-	costs = np.dot(dispatch, gen_info.heat_rates).sum() * time_interval
+	costs = np.dot(dispatch, gen_info.min_fuel_cost).sum() * time_interval
 
 	return costs
 
@@ -65,7 +65,7 @@ def advanced_priority_list(state, horizon):
 	time_interval = state.dispatch_freq_mins/60
 
 	# Sort to priority list order 
-	gen_info_sorted = state.gen_info.sort_values('heat_rates')
+	gen_info_sorted = state.gen_info.sort_values('min_fuel_cost')
 
 	# Net demand forecast
 	demand = state.episode_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
@@ -110,7 +110,7 @@ def advanced_priority_list(state, horizon):
 	
 	for t in range(uc_schedule.shape[0]):
 		online_gens = np.where(uc_schedule[t])[0]
-		weighted_avg_hr[t] = (np.dot(gen_info_sorted.heat_rates.values[online_gens], 
+		weighted_avg_hr[t] = (np.dot(gen_info_sorted.min_fuel_cost.values[online_gens], 
 								  gen_info_sorted.min_output.values[online_gens])/
 							  np.sum(gen_info_sorted.min_output.values[online_gens]))
 		
