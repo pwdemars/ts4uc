@@ -98,10 +98,11 @@ def advanced_priority_list(state, horizon):
 			res -= gen_info_sorted.max_output.values[g]
 
 	# Estimate start costs (assume all starts are hot)
-	extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
-							  uc_schedule))
-	starts = np.sum(np.diff(extended_schedule) == 1, axis=1)
-	start_cost = np.dot(gen_info_sorted.hot_cost.values, starts)
+	# extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
+	# 						  uc_schedule))
+	# starts = np.sum(np.diff(extended_schedule) == 1, axis=1)
+	# start_cost = np.dot(gen_info_sorted.hot_cost.values, starts)
+	start_cost = 0
 
 	# Estimate fuel costs using average heat rate of online generators, weighted by capacity
 	uc_schedule = uc_schedule.T
@@ -109,7 +110,7 @@ def advanced_priority_list(state, horizon):
 	
 	for t in range(uc_schedule.shape[0]):
 		online_gens = np.where(uc_schedule[t])[0]
-		weighted_avg_hr[t] = (np.dot(gen_info_sorted.max_cost_per_mwh.values[online_gens], 
+		weighted_avg_hr[t] = (np.dot(gen_info_sorted.heat_rates.values[online_gens], 
 								  gen_info_sorted.min_output.values[online_gens])/
 							  np.sum(gen_info_sorted.min_output.values[online_gens]))
 		
