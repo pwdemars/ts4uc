@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from rl4uc import dispatch
+
 import numpy as np
 
 def check_lost_load(state, horizon):
 	"""Check if forecast demand can be met for the next H periods from state"""
-	if horizon == 0:
-		return 0
 	horizon = min(horizon, max(state.gen_info.t_min_down.max(), abs(state.gen_info.t_min_down.min())))
 	for t in range(1,horizon+1):
 		net_demand = state.episode_forecast[state.episode_timestep+t] - state.episode_wind_forecast[state.episode_timestep+t] # Nominal demand for t+1th period ahead
@@ -57,7 +57,7 @@ def priority_list(state, horizon):
 	return costs
 
 def constrained_commitment(gen_info_sorted, state, net_demand):
-
+	"""Determine a UC schedule that satisfies initial generator constraints"""
 	# Initialise the schedule
 	uc_schedule = np.zeros([state.num_gen, net_demand.size])
 	
@@ -87,20 +87,78 @@ def constrained_commitment(gen_info_sorted, state, net_demand):
 
 	return uc_schedule
 
+def weighted_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
+	"""Calculate the average fuel cost per period as a weighted average of min fuel costs of online generators."""
+	uc_schedule = uc_schedule.T
+	weighted_avg_fc = np.zeros(uc_schedule.shape[0])
+	
+	for t in range(uc_schedule.shape[0]):
+		online_gens = np.where(uc_schedule[t])[0]
+		weighted_avg_fc[t] = (np.dot(gen_info_sorted.min_fuel_cost.values[online_gens], 
+								  gen_info_sorted.min_output.values[online_gens])/
+							  np.sum(gen_info_sorted.min_output.values[online_gens]))
+		
+	fuel_cost = np.dot(weighted_avg_fc, net_demand) * time_interval
 
+	return fuel_cost
 
-def advanced_priority_list(state, horizon):
+def economic_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
+	fc = 0 
+	for commitment, net_demand in zip(uc_schedule.T, net_demand):
+		disp = economic_dispatch(commitment, net_demand, gen_info_sorted)
+		fc += np.sum(np.multiply(disp, np.square(gen_info_sorted.a.values)) + 
+					 np.multiply(disp, gen_info_sorted.b.values) + 
+					 gen_info_sorted.c.values) * time_interval
+	return fc
+
+def economic_dispatch(commitment, net_demand, gen_info_sorted, lambda_low=0., lambda_high=100., epsilon=1.):
+
+	disp = np.zeros(commitment.size)
+	idx = np.where(commitment==1)[0]
+
+	on_max = gen_info_sorted.max_output.values[idx]
+	on_min = gen_info_sorted.min_output.values[idx]
+	on_a = gen_info_sorted.a.values[idx]
+	on_b = gen_info_sorted.b.values[idx]
+
+	if np.sum(on_max) < net_demand:
+		econ = on_max
+	elif np.sum(on_min) > net_demand:
+		econ = on_min
+	else:
+		econ = dispatch.lambda_iteration(net_demand, 
+										  lambda_low, 
+										  lambda_high, 
+										  on_a,
+										  on_b,
+										  on_min, 
+										  on_max,
+										  epsilon)
+	disp[idx] = econ
+	return disp
+
+def start_cost(uc_schedule, gen_info_sorted, state):
+	"""Calculate start costs for the UC schedule"""
+	extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
+								   uc_schedule))
+	starts = np.sum(np.diff(extended_schedule) == 1, axis=1)
+	start_cost = np.dot(gen_info_sorted.hot_cost.values, starts)
+	return start_cost 
+
+def lost_load_cost(uc_schedule, gen_info_sorted, net_demand, voll, time_interval):
+	committed = np.dot(uc_schedule.T, gen_info_sorted.max_output.values)
+	ens = np.maximum(net_demand - committed, 0)
+	llc = np.sum(ens * voll * time_interval) # lost load cost
+	return llc
+
+def advanced_priority_list(state, horizon, fuel_cost_method='economic', start_costs=False, lost_load_costs=False):
 	"""
 	Priority list cost estimation for environment for subsequent periods.
 	
 	In this version, generator constraints must be obeyed
 	"""
-	if horizon == 0:
-		return 0
-
 	# Sort by min fuel cost (priority list order)
 	gen_info_sorted = state.gen_info.sort_values('min_fuel_cost')
-
 	time_interval = state.dispatch_freq_mins/60
 
 	# Net demand forecast
@@ -110,34 +168,24 @@ def advanced_priority_list(state, horizon):
 
 	uc_schedule = constrained_commitment(gen_info_sorted, state, net_demand)
 
-	# Estimate start costs (assume all starts are hot)
-	extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
-							  uc_schedule))
-	starts = np.sum(np.diff(extended_schedule) == 1, axis=1)
-	start_cost = np.dot(gen_info_sorted.hot_cost.values, starts)
-	start_cost = 0
+	if fuel_cost_method=='weighted':
+		fc = weighted_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval)
+	elif fuel_cost_method=='economic':
+		fc = economic_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval)
+	else:
+		raise ValueError('{} is not a valid fuel cost calculation method'.format(fuel_cost_method))
 
-	# Estimate fuel costs using average heat rate of online generators, weighted by capacity
-	uc_schedule = uc_schedule.T
-	weighted_avg_hr = np.zeros(uc_schedule.shape[0])
-	
-	for t in range(uc_schedule.shape[0]):
-		online_gens = np.where(uc_schedule[t])[0]
-		weighted_avg_hr[t] = (np.dot(gen_info_sorted.min_fuel_cost.values[online_gens], 
-								  gen_info_sorted.min_output.values[online_gens])/
-							  np.sum(gen_info_sorted.min_output.values[online_gens]))
-		
-	fuel_cost = np.dot(weighted_avg_hr, net_demand) * time_interval
+	if start_costs:
+		sc = start_cost(uc_schedule, gen_info_sorted, state)
+	else: 
+		sc = 0
 
-	# Add a lost load cost if res > 0
-	# if res > 0: 
-	# 	lost_load_cost = res * state.voll * time_interval
-	# else:
-	# 	lost_load_cost = 0
-	lost_load_cost=0
+	if lost_load_costs:
+		llc=lost_load_cost(uc_schedule, gen_info_sorted, net_demand, state.voll, time_interval)
+	else: 
+		llc = 0
 
-	
-	return fuel_cost + start_cost + lost_load_cost
+	return fc + sc + llc
 
 def pl_plus_ll(state, horizon):
 	if check_lost_load(state, horizon) == np.inf:
@@ -147,7 +195,9 @@ def pl_plus_ll(state, horizon):
 
 def heuristic(node, horizon, method='pl_plus_ll'):
 	"""Simple heuristic that givees np.inf if a node's state is infeasible, else 0"""
-	if method=='check_lost_load':
+	if horizon == 0:
+		return 0
+	elif method=='check_lost_load':
 		heuristic_cost = check_lost_load(node.state, horizon)
 	elif method=='priority_list':
 		heuristic_cost = priority_list(node.state, horizon)
