@@ -56,26 +56,10 @@ def priority_list(state, horizon):
 
 	return costs
 
-def advanced_priority_list(state, horizon):
-	"""
-	Priority list cost estimation for environment for subsequent periods.
-	
-	In this version, generator constraints must be obeyed
-	"""
-	if horizon == 0:
-		return 0
+def constrained_commitment(gen_info_sorted, state, net_demand):
 
-	time_interval = state.dispatch_freq_mins/60
-
-	# Sort to priority list order 
-	gen_info_sorted = state.gen_info.sort_values('min_fuel_cost')
-
-	# Net demand forecast
-	demand = state.episode_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
-	wind = state.episode_wind_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
-	net_demand = demand - wind
-		 
-	uc_schedule = np.zeros([state.num_gen, demand.size])
+	# Initialise the schedule
+	uc_schedule = np.zeros([state.num_gen, net_demand.size])
 	
 	# Fix constrained gens
 	for g in range(state.num_gen):
@@ -101,11 +85,36 @@ def advanced_priority_list(state, horizon):
 
 	uc_schedule[uc_schedule == -1 ] =  0 
 
+	return uc_schedule
+
+
+
+def advanced_priority_list(state, horizon):
+	"""
+	Priority list cost estimation for environment for subsequent periods.
+	
+	In this version, generator constraints must be obeyed
+	"""
+	if horizon == 0:
+		return 0
+
+	# Sort by min fuel cost (priority list order)
+	gen_info_sorted = state.gen_info.sort_values('min_fuel_cost')
+
+	time_interval = state.dispatch_freq_mins/60
+
+	# Net demand forecast
+	demand = state.episode_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
+	wind = state.episode_wind_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
+	net_demand = demand - wind
+
+	uc_schedule = constrained_commitment(state, net_demand)
+
 	# Estimate start costs (assume all starts are hot)
-	# extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
-	# 						  uc_schedule))
-	# starts = np.sum(np.diff(extended_schedule) == 1, axis=1)
-	# start_cost = np.dot(gen_info_sorted.hot_cost.values, starts)
+	extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
+							  uc_schedule))
+	starts = np.sum(np.diff(extended_schedule) == 1, axis=1)
+	start_cost = np.dot(gen_info_sorted.hot_cost.values, starts)
 	start_cost = 0
 
 	# Estimate fuel costs using average heat rate of online generators, weighted by capacity
