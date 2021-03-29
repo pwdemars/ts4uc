@@ -108,7 +108,7 @@ def advanced_priority_list(state, horizon):
 	wind = state.episode_wind_forecast[state.episode_timestep+1:state.episode_timestep+horizon+1]
 	net_demand = demand - wind
 
-	uc_schedule = constrained_commitment(state, net_demand)
+	uc_schedule = constrained_commitment(gen_info_sorted, state, net_demand)
 
 	# Estimate start costs (assume all starts are hot)
 	extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
@@ -130,11 +130,12 @@ def advanced_priority_list(state, horizon):
 	fuel_cost = np.dot(weighted_avg_hr, net_demand) * time_interval
 
 	# Add a lost load cost if res > 0
-	if res > 0: 
-		lost_load_cost = res * state.voll * time_interval
-	else:
-		lost_load_cost = 0
+	# if res > 0: 
+	# 	lost_load_cost = res * state.voll * time_interval
+	# else:
+	# 	lost_load_cost = 0
 	lost_load_cost=0
+
 	
 	return fuel_cost + start_cost + lost_load_cost
 
