@@ -76,29 +76,30 @@ def advanced_priority_list(state, horizon):
 	net_demand = demand - wind
 		 
 	uc_schedule = np.zeros([state.num_gen, demand.size])
-	free_generators = np.zeros([state.num_gen, demand.size])
+	
 	# Fix constrained gens
 	for g in range(state.num_gen):
 		if state.status[g] < 0:
 			n = max(gen_info_sorted.t_min_down.values[g] + state.status[g], 0)
-			uc_schedule[g,:n] = 0
+			uc_schedule[g,:n] = -1
 		else:
 			n = max(gen_info_sorted.t_min_up.values[g] - state.status[g], 0)
 			uc_schedule[g,:n] = 1
-		free_generators[g,n:] = 1
 			
 	committed_cap = np.dot(uc_schedule.T, gen_info_sorted.max_output.values)
 	residual_load = net_demand - committed_cap
 
-	for t in range(demand.size):
+	for t in range(net_demand.size):
 		res = residual_load[t]
-		free_gens = np.where(free_generators[:,t] == 1)[0]
+		free_gens = np.where(uc_schedule[:,t] == 0)[0]
 		for g in free_gens:
 			if res <= 0:
 				break
 			# Commit the next generator
 			uc_schedule[g,t] = 1
 			res -= gen_info_sorted.max_output.values[g]
+
+	uc_schedule[uc_schedule == -1 ] =  0 
 
 	# Estimate start costs (assume all starts are hot)
 	# extended_schedule = np.hstack((np.where(state.status > 0, 1, 0).reshape(-1,1),
@@ -117,13 +118,14 @@ def advanced_priority_list(state, horizon):
 								  gen_info_sorted.min_output.values[online_gens])/
 							  np.sum(gen_info_sorted.min_output.values[online_gens]))
 		
-	fuel_cost = np.dot(weighted_avg_hr, demand) * time_interval
+	fuel_cost = np.dot(weighted_avg_hr, net_demand) * time_interval
 
 	# Add a lost load cost if res > 0
 	if res > 0: 
 		lost_load_cost = res * state.voll * time_interval
 	else:
 		lost_load_cost = 0
+	lost_load_cost=0
 	
 	return fuel_cost + start_cost + lost_load_cost
 
