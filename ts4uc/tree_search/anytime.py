@@ -84,7 +84,7 @@ def ida_star(node,
 
                 # Early stopping if root has one child
                 if node.parent is None and len(actions) == 1:
-                    best_path, _ [actions[0]], 0
+                    best_path, _ = [actions[0]], 0
                     break
         horizon += 1
         terminal_timestep = min(node.state.episode_timestep + horizon, node.state.episode_length-1)
