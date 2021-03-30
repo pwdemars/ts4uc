@@ -18,7 +18,6 @@ def check_lost_load(state, horizon):
 
 		if available_cap < net_demand:
 			return np.inf
-
 	return 0
 
 def priority_list(state, horizon): 
@@ -70,7 +69,8 @@ def constrained_commitment(gen_info_sorted, state, net_demand):
 			n = max(gen_info_sorted.t_min_up.values[g] - state.status[g], 0)
 			uc_schedule[g,:n] = 1
 			
-	committed_cap = np.dot(uc_schedule.T, gen_info_sorted.max_output.values)
+	on_schedule = np.where(uc_schedule==-1, 0, uc_schedule)
+	committed_cap = np.dot(on_schedule.T, gen_info_sorted.max_output.values) 
 	residual_load = net_demand - committed_cap
 
 	for t in range(net_demand.size):
@@ -104,8 +104,8 @@ def weighted_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
 
 def economic_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
 	fc = 0 
-	for commitment, net_demand in zip(uc_schedule.T, net_demand):
-		disp = economic_dispatch(commitment, net_demand, gen_info_sorted)
+	for commitment, nd in zip(uc_schedule.T, net_demand):
+		disp = economic_dispatch(commitment, nd, gen_info_sorted)
 		fc += np.sum(np.multiply(disp, np.square(gen_info_sorted.a.values)) + 
 					 np.multiply(disp, gen_info_sorted.b.values) + 
 					 gen_info_sorted.c.values) * time_interval
