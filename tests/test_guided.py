@@ -24,6 +24,7 @@ TREE_SEARCH_FUNC_NAME = 'uniform_cost_search'
 SEED = 1 
 NUM_SCENARIOS = 100
 TEST_SAMPLE_SEED = 999
+TIME_PERIODS = 4
 NUM_SAMPLES = 1000
 
 def test_uniform_cost_search():
@@ -36,7 +37,7 @@ def test_uniform_cost_search():
 	policy_params = json.load(open(POLICY_PARAMS_FN))
 
 	# Load profile 
-	profile_df = pd.read_csv(TEST_DATA_FN)
+	profile_df = pd.read_csv(TEST_DATA_FN)[:TIME_PERIODS]
 
 	params = {'horizon': HORIZON,
 			  'branching_threshold': BRANCHING_THRESHOLD}
@@ -60,4 +61,4 @@ def test_uniform_cost_search():
 	# Get distribution of costs for solution by running multiple times through environment
 	test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
 
-	assert np.isclose(np.mean(test_costs), 288368.57)
+	assert np.isclose(np.mean(test_costs), 23342.663977103897)
