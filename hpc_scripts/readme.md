@@ -17,4 +17,4 @@ Here are the experiments:
 ## Chapter 2
 
 - `201-heuristic_comparison.sh`: compare A* and RTA* using 3 heuristic methods `check_lost_load`, `priority_list` and `pl_plus_ll` for 5, 10, 20 and 30 generator day-ahead problems. Note: results should ultimately be combined with the uniform-cost search results from experiment 105 (for 10, 20 and 30 generator problems). H={2,4,6}, rho=0.05. 
-- `202-anytime_rta_star.sh` (TODO): using the best heuristic from experiment 201, run anytime RTA* for 5, 10, 20 and 30 generator problems using rho=0.05 and time budget={1,5,15} mins.
+- `202-anytime_ida_star.sh` (TODO): using the same heuristics from the previous experiments, use IDA* to solve the day ahead problem with increasing computational budget: {1, 2, 5, 10, 30, 60}s. 
