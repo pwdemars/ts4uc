@@ -53,19 +53,27 @@ def solve_day_ahead_anytime(env,
         
     return final_schedule
 
-def ida_star(node,
+def ida_star(root,
              time_budget,
              net_demand_scenarios,
              heuristic_method,
              **policy_kwargs):
     start_time = time.time() 
-    horizon = 1
-    terminal_timestep = min(node.state.episode_timestep + horizon, node.state.episode_length-1)
+    horizon = 0
+    best_path = []
+    node = root
     while (time.time() - start_time) < time_budget:
+
+        horizon += 1 # Increment the horizon (iterative deepening)
+        terminal_timestep = min(root.state.episode_timestep+horizon, root.state.episode_length-1) 
         print("Horizon: {}".format(horizon))
+
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             best_path, _ = node_mod.get_solution(node)
-            break
+            return best_path
+
+        node = root # Return to root
+
         frontier = queue.PriorityQueue()
         frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
         while (time.time() - start_time) < time_budget:
@@ -86,8 +94,6 @@ def ida_star(node,
                 if node.parent is None and len(actions) == 1:
                     best_path, _ = [actions[0]], 0
                     break
-        horizon += 1
-        terminal_timestep = min(node.state.episode_timestep + horizon, node.state.episode_length-1)
 
     return best_path
 
