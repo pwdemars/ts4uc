@@ -193,9 +193,11 @@ def pl_plus_ll(state, horizon):
 	else:
 		return priority_list(state, horizon)
 
-def heuristic(node, horizon, method='pl_plus_ll'):
+def heuristic(node, horizon, method=None):
 	"""Simple heuristic that givees np.inf if a node's state is infeasible, else 0"""
-	if horizon == 0:
+	if not method:
+		return 0
+	elif horizon == 0:
 		return 0
 	elif method=='check_lost_load':
 		heuristic_cost = check_lost_load(node.state, horizon)
