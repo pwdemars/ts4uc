@@ -10,6 +10,7 @@ import os
 import torch
 import argparse
 import json
+import random
 
 from rl4uc.environment import make_env
 
@@ -40,7 +41,12 @@ def solve_day_ahead_anytime(env,
                                       time_budget,
                                       net_demand_scenarios,
                                       **params)
-        a_best = path[0]
+
+        if len(path) == 0:
+            random_child_bytes = random.sample(list(root.children), 1)[0]
+            a_best = root.children[random_child_bytes].action
+        else:
+            a_best = path[0]
 
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
@@ -148,12 +154,13 @@ if __name__ == "__main__":
                         help='Number of scenarios to use when calculating expected costs')
     parser.add_argument('--tree_search_func_name', type=str, required=False, default='ida_star',
                         help='Tree search algorithm to use')
-    parser.add_argument('--heuristic_method', type=str, required=False, default='check_lost_load',
+    parser.add_argument('--heuristic_method', type=str, required=False, default=None,
                         help='Heuristic method to use (when using A* or its variants)')
 
     args = parser.parse_args()
 
     if args.branching_threshold == -1: args.branching_threshold = None
+    if args.heuristic_method.lower() == 'none': args.heuristic_method = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)

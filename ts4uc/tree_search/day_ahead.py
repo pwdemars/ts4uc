@@ -89,6 +89,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.branching_threshold == -1: args.branching_threshold = None
+    if args.heuristic_method.lower() == 'none': args.heuristic_method = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
