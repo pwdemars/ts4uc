@@ -5,7 +5,7 @@ date=$(date +"%y-%m-%d")
 
 #
 rho=05
-tree_search_func_name="a_star"
+tree_search_func_name="ida_star"
 for g in 10 20 30; 
   do for t in 1 2 5 10 30 60;
     do for heuristic_method in "check_lost_load" "priority_list" "advanced_priority_list" "none";
