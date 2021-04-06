@@ -68,10 +68,7 @@ def ida_star(root,
     horizon = 0
     best_path = []
     node = root
-    print('------------------')
     while (time.time() - start_time) < time_budget:
-
-        print(best_path[:1][-5:])
 
         horizon += 1 # Increment the horizon (iterative deepening)
         terminal_timestep = min(root.state.episode_timestep+horizon, root.state.episode_length-1) 
@@ -160,7 +157,7 @@ if __name__ == "__main__":
                         help='Number of scenarios to use when calculating expected costs')
     parser.add_argument('--tree_search_func_name', type=str, required=False, default='ida_star',
                         help='Tree search algorithm to use')
-    parser.add_argument('--heuristic_method', type=str, required=False, default=None,
+    parser.add_argument('--heuristic_method', type=str, required=False, default='none',
                         help='Heuristic method to use (when using A* or its variants)')
 
     args = parser.parse_args()

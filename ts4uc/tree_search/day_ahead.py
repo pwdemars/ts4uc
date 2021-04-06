@@ -38,8 +38,9 @@ def solve_day_ahead(env,
             step_cost=0,
             path_cost=0)
 
+    period_times = []
     for t in range(env.episode_length):
-        s = time.time()
+        period_start_time = time.time()
         terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
         path, cost = tree_search_func(root, 
                                       terminal_timestep, 
@@ -49,14 +50,16 @@ def solve_day_ahead(env,
 
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
-        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(cost, 2), round(time.time()-s, 2))
+        print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(cost, 2), round(time.time()-period_start_time, 2))
 
         root = root.children[a_best.tobytes()]
         root.parent, root.path_cost = None, 0
 
         gc.collect()
-        
-    return final_schedule
+
+        period_times.append(time.time()-period_start_time)
+
+    return final_schedule, period_times
 
 if __name__ == "__main__":
 
@@ -147,7 +150,7 @@ if __name__ == "__main__":
 
     # Run the tree search
     s = time.time()
-    schedule_result = solve_day_ahead(env=env, 
+    schedule_result, period_times = solve_day_ahead(env=env, 
                                       net_demand_scenarios=scenarios, 
                                       tree_search_func=funcs_dict[args.tree_search_func_name],
                                       policy=policy,
@@ -157,7 +160,7 @@ if __name__ == "__main__":
     # Get distribution of costs for solution by running multiple times through environment
     TEST_SAMPLE_SEED=999
     test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
-    helpers.save_results(prof_name, args.save_dir, env.num_gen, schedule_result, test_costs, lost_loads, time_taken)
+    helpers.save_results(prof_name, args.save_dir, env.num_gen, schedule_result, test_costs, lost_loads, time_taken, period_times)
 
     print("Done")
     print()
