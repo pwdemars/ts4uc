@@ -50,7 +50,7 @@ def test_ida_star():
     # Generate scenarios for demand and wind errors
     scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
 
-    schedule_result = solve_day_ahead_anytime(env=env, 
+    schedule_result, depths = solve_day_ahead_anytime(env=env, 
                                               time_budget=TIME_BUDGET,
                                               net_demand_scenarios=scenarios, 
                                               tree_search_func=ida_star,

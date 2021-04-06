@@ -160,7 +160,14 @@ if __name__ == "__main__":
     # Get distribution of costs for solution by running multiple times through environment
     TEST_SAMPLE_SEED=999
     test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
-    helpers.save_results(prof_name, args.save_dir, env.num_gen, schedule_result, test_costs, lost_loads, time_taken, period_times)
+    helpers.save_results(prof_name=prof_name, 
+                         save_dir=args.save_dir, 
+                         num_gen=env.num_gen, 
+                         schedule=schedule_result,
+                         test_costs=test_costs, 
+                         lost_loads=lost_loads,
+                         time_taken=time_taken,
+                         period_time_taken=period_times)
 
     print("Done")
     print()

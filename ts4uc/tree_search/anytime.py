@@ -35,14 +35,16 @@ def solve_day_ahead_anytime(env,
             step_cost=0,
             path_cost=0)
 
+    depths = []
     for t in range(env.episode_length):
         s = time.time()
         path = tree_search_func(root, 
                                       time_budget,
                                       net_demand_scenarios,
                                       **params)
-
-        if len(path) == 0:
+        depth = len(path)
+        depths.append(depth)
+        if depth == 0:
             random_child_bytes = random.sample(list(root.children), 1)[0]
             a_best = root.children[random_child_bytes].action
         else:
@@ -57,7 +59,7 @@ def solve_day_ahead_anytime(env,
 
         gc.collect()
         
-    return final_schedule
+    return final_schedule, depths
 
 def ida_star(root,
              time_budget,
@@ -220,17 +222,24 @@ if __name__ == "__main__":
 
     # Run the tree search
     s = time.time()
-    schedule_result = solve_day_ahead_anytime(env=env, 
-                                              net_demand_scenarios=scenarios, 
-                                              tree_search_func=funcs_dict[args.tree_search_func_name],
-                                              policy=policy,
-                                              **params)
+    schedule_result, depths = solve_day_ahead_anytime(env=env, 
+                                                      net_demand_scenarios=scenarios, 
+                                                      tree_search_func=funcs_dict[args.tree_search_func_name],
+                                                      policy=policy,
+                                                      **params)
     time_taken = time.time() - s
 
     # Get distribution of costs for solution by running multiple times through environment
     TEST_SAMPLE_SEED=999
     test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
-    helpers.save_results(prof_name, args.save_dir, env.num_gen, schedule_result, test_costs, lost_loads, time_taken)
+    helpers.save_results(prof_name=prof_name, 
+                         save_dir=args.save_dir, 
+                         num_gen=env.num_gen, 
+                         schedule=schedule_result,
+                         test_costs=test_costs, 
+                         lost_loads=lost_loads,
+                         time_taken=time_taken,
+                         depths=depths)
 
     print("Done")
     print()

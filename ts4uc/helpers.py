@@ -169,7 +169,8 @@ def save_results(prof_name,
                  test_costs, 
                  lost_loads, 
                  time_taken,
-                 period_time_taken=None):
+                 period_time_taken=None,
+                 depths=None):
     # save test costs
     all_test_costs = pd.DataFrame({prof_name: test_costs})
     all_test_costs.to_csv(os.path.join(save_dir, '{}_costs.csv'.format(prof_name)), index=False, compression=None)
@@ -187,6 +188,11 @@ def save_results(prof_name,
         period_tt_df = pd.DataFrame({'period': np.arange(len(period_time_taken)),
                                      'time': period_time_taken})
         period_tt_df.to_csv(os.path.join(save_dir, '{}_period_times.csv'.format(prof_name)), index=False)
+
+    if depths is not None:
+        depths_df = pd.DataFrame({'period': np.arange(len(depths)),
+                                  'time': depths})
+        depths_df.to_csv(os.path.join(save_dir, '{}_depths.csv'.format(prof_name)), index=False)
 
     # save time taken
     with open(os.path.join(save_dir, '{}_time.txt'.format(prof_name)), 'w') as f:
