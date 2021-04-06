@@ -68,7 +68,10 @@ def ida_star(root,
     horizon = 0
     best_path = []
     node = root
+    print('------------------')
     while (time.time() - start_time) < time_budget:
+
+        print(best_path[:1][-5:])
 
         horizon += 1 # Increment the horizon (iterative deepening)
         terminal_timestep = min(root.state.episode_timestep+horizon, root.state.episode_length-1) 
@@ -82,6 +85,7 @@ def ida_star(root,
 
         frontier = queue.PriorityQueue()
         frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
+
         while (time.time() - start_time) < time_budget:
             assert frontier, "Failed to find a goal state"
             node = frontier.get()[2]
@@ -89,6 +93,7 @@ def ida_star(root,
                 best_path, _ = node_mod.get_solution(node)
                 break
             actions = expansion.get_actions(node, **policy_kwargs)
+
             for action in actions:
                 net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
                 child = expansion.get_child_node(node, action, net_demand_scenarios_t)
@@ -97,9 +102,10 @@ def ida_star(root,
                 frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
                 # Early stopping if root has one child
-                if node.parent is None and len(actions) == 1:
-                    best_path, _ = [actions[0]], 0
-                    break
+                # if node.parent is None and len(actions) == 1:
+                #     print('yes')
+                #     best_path = [actions[0]]
+                #     # return best_path
 
     return best_path
 

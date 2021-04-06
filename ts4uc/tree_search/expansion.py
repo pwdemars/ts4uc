@@ -76,7 +76,6 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True):
     else:
         cost = scenarios.calculate_expected_costs(new_env, net_demand_scenarios)
 
-    # TODO: add step cost
     child = Node(env=new_env,
                 parent=node,
                 action=action,
