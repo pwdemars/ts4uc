@@ -200,6 +200,27 @@ def save_results(prof_name,
         f.write('\n')
         f.close()
 
+def save_results_rolling(prof_name, 
+                         save_dir, 
+                         schedule,
+                         cost, 
+                         time,
+                         lolp,
+                         period_time_taken=None,
+                         depths=None):
+    # Create df 
+    results_df = pd.DataFrame({'profile': prof_name,
+                            'cost': cost,
+                            'time': time,
+                            'lolp': lolp}, index=[0])
+    results_df.to_csv(os.path.join(save_dir, 'results.csv'), index=False)
+
+    # Save schedule 
+    columns =  ['schedule_' + str(i) for i in range(schedule.shape[1])]
+    schedule_df = pd.DataFrame(schedule, columns=columns)
+    schedule_df['profile'] = prof_name
+    schedule_df.to_csv(os.path.join(save_dir, 'schedule.csv'), index=False)
+
 def get_scenarios(env, N):
     """
     Calculate N realisations of net demand for demand and wind forecast errors

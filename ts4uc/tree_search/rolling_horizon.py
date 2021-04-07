@@ -29,6 +29,7 @@ def solve_rolling_anytime(env,
     env.reset() 
     operating_cost = 0
     depths = []
+    ens_count = 0
 
     net_demand_scenarios = np.zeros((params.get('num_scenarios'), env.episode_length))
 
@@ -73,10 +74,13 @@ def solve_rolling_anytime(env,
         print(f"Period {root.state.episode_timestep}", np.array(a_best, dtype=int), np.round(-reward ,2))
 
         operating_cost -= reward
+        if env.ens: ens_count += 1
 
         gc.collect()
 
-    return final_schedule, operating_cost, depths 
+    lolp = ens_count / env.episode_length
+
+    return final_schedule, operating_cost, lolp, depths
 
 
 if __name__ == "__main__":
@@ -141,7 +145,7 @@ if __name__ == "__main__":
     print("------------------")
 
     # Initialise environment with forecast profile and reference forecast (for scaling)
-    profile_df = pd.read_csv(args.test_data)
+    profile_df = pd.read_csv(args.test_data)[:5]
     env = make_env(mode='test', profiles_df=profile_df, **env_params)
 
     # Load policy 
@@ -163,11 +167,19 @@ if __name__ == "__main__":
 
     # Run the tree search
     s = time.time()
-    schedule_result, cost, depths = solve_rolling_anytime(env=env, 
+    schedule_result, cost, lolp, depths = solve_rolling_anytime(env=env, 
                                                 tree_search_func=funcs_dict[args.tree_search_func_name],
                                                 policy=policy,
                                                 **params)
     time_taken = time.time() - s
+
+    helpers.save_results_rolling(prof_name=prof_name,
+                                save_dir=args.save_dir,
+                                schedule=schedule_result,
+                                cost=cost,
+                                time=time_taken,
+                                lolp=lolp
+                                )
 
     print("Operating cost: ${:.2f}".format(cost))
     print("Time taken: {:.2f}s".format(time_taken))
