@@ -21,6 +21,7 @@ number=$SGE_TASK_ID
 index="`sed -n ${number}p $paramfile | awk '{print $1}'`"
 test_data="`sed -n ${number}p $paramfile | awk '{print $2}'`"
 seed="`sed -n ${number}p $paramfile | awk '{print $3}'`"
+prof_name="`sed -n ${number}p $paramfile | awk '{print $4}'`"
 
 module load gcc-libs
 module load python3/3.7
@@ -28,7 +29,7 @@ module load python3/3.7
 
 cd $TMPDIR
 
-python $HOME/ts4uc/ts4uc/tree_search/rolling_horizon.py --save_dir $save_dir \
+python $HOME/ts4uc/ts4uc/tree_search/rolling_horizon.py --save_dir ${save_dir}/${prof_name}/${seed} \
 												  --policy_params_fn $params_filename \
 												  --env_params_fn $env_params_filename \
 												  --policy_filename $policy_filename \

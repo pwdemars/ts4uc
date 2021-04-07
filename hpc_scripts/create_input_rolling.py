@@ -17,7 +17,8 @@ all_fns_reps = np.repeat(all_fns, NUM_SCENARIOS)
 seeds = np.tile(np.arange(NUM_SCENARIOS), len(all_fns))
 
 for i, (fn, seed) in enumerate(zip(all_fns_reps, seeds)):
-    line = str(i).zfill(4) + ' ' + os.path.join(data_dir, fn) + ' ' + str(seed)
+    prof_name = fn.split('.')[0]
+    line = str(i).zfill(4) + ' ' + os.path.join(data_dir, fn) + ' ' + str(seed) + ' ' + str(prof_name)
     with open(input_fn, 'a') as f:
         f.write(line)
         f.write('\n')
