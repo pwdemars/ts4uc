@@ -1,86 +1,134 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from rl4uc.rl4uc.environment import make_env
-from ac_agent import ACAgent
-from helpers import test_schedule, save_results
-import tree_search
-
-
 import numpy as np
-import argparse 
-import torch
+import time 
+import queue
+import gc
 import pandas as pd
 import os
+import torch
+import argparse
 import json
-import gc
-import time
+import random
+
+from rl4uc.environment import make_env
+
+from ts4uc.tree_search import node as node_mod, expansion, informed_search, scenarios
+from ts4uc.tree_search.anytime import ida_star
+from ts4uc import helpers
+from ts4uc.agents.ac_agent import ACAgent
+
+def solve_rolling_anytime(env,
+                          time_budget,
+                          tree_search_func,
+                          **params):
+    """
+    Solve the UC problem in a rolling context, beginning with the state defined by env.
+    """
+    final_schedule = np.zeros((env.episode_length, env.num_gen))
+    env.reset() 
+    operating_cost = 0
+    depths = []
+    for t in range(env.episode_length):
+        # initialise env
+        root = node_mod.Node(env=env,
+                parent=None,
+                action=None,
+                step_cost=0,
+                path_cost=0)
+
+        # generate new scenarios, seeded by the ARMA processes in env. 
+        remaining_periods = env.episode_length - t 
+        demand_errors, wind_errors = scenarios.sample_errors(env, params.get('num_scenarios'), remaining_periods)
+        demand_forecast = env.profiles_df.demand[t:].values
+        wind_forecast = env.profiles_df.wind[t:].values
+
+        net_demand_scenarios = (demand_forecast + demand_errors) - (wind_forecast + wind_errors)
+        net_demand_scenarios = np.clip(net_demand_scenarios, env.min_demand, env.max_demand)
+
+        # find least expected cost path 
+        path = tree_search_func(root,
+                               time_budget,
+                               net_demand_scenarios,
+                               **params)
+
+        depth = len(path)
+        depths.append(depth)
+        if depth == 0:
+            random_child_bytes = random.sample(list(root.children), 1)[0]
+            a_best = root.children[random_child_bytes].action
+        else:
+            a_best = path[0]
+
+        final_schedule[t, :] = a_best
+
+        # sample new state
+        _, reward, _ = env.step(a_best, deterministic=False)
+
+        print(f"Period {root.state.episode_timestep}", np.array(a_best, dtype=int), -reward)
+
+        operating_cost -= reward
+
+        gc.collect()
+
+    return final_schedule, operating_cost, depths 
 
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Test with MCTS (single day)')
-    parser.add_argument('--save_dir', type=str, required=True,
+    parser = argparse.ArgumentParser(description='Solve a single day with tree search')
+    parser.add_argument('--save_dir', '-s', type=str, required=True,
                         help='Directory to save results')
-    parser.add_argument('--params_fn', type=str, required=True,
+    parser.add_argument('--policy_params_fn', '-pp', type=str, required=False,
                         help='Filename for parameters')
-    parser.add_argument('--arma_params_fn', type=str, required=True,
-                        help='Filename for ARMA parameters')
-    parser.add_argument('--policy_filename', type=str, required=False,
+    parser.add_argument('--env_params_fn', '-e', type=str, required=True,
+                        help='Filename for environment parameters, including ARMAs, number of generators, dispatch frequency')
+    parser.add_argument('--policy_filename', '-pf', type=str, required=False,
                         help="Filename for policy [.pt]. Set to 'none' or omit this argument to train from scratch", default=None)
-    parser.add_argument('--test_data', type=str, required=True,
+    parser.add_argument('--test_data', '-t', type=str, required=True,
                         help='Location of problem file [.csv]')
     parser.add_argument('--num_samples', type=int, required=False, default=1000,
                         help='Number of times to sample running the schedules through the environment')
-    parser.add_argument('--decision_branching_threshold', type=float, required=False, default=0.05,
-                        help='Decision node branching threshold')
-    parser.add_argument('--expansion_mode', type=str, required=False, default='guided',
-                        help='Method to use for the expansion nodes')
-    parser.add_argument('--horizon', type=int, required=False, default=None,
-                        help='Lookahead horizon')
+    parser.add_argument('--branching_threshold', type=float, required=False, default=0.05,
+                        help='Branching threshold (for guided expansion)')
+    parser.add_argument('--seed', type=int, required=False, default=np.random.randint(0,10000),
+                        help='Set random seed')
+    parser.add_argument('--time_budget', type=float, required=False, default=1,
+                        help='Time budget in seconds for anytime algorithm')
     parser.add_argument('--num_scenarios', type=int, required=False, default=100,
                         help='Number of scenarios to use when calculating expected costs')
-    parser.add_argument('--cost_to_go', type=str, required=False, default="false",
-                        help='Use cost to go heuristic for state evaluation. Default is False')
-    parser.add_argument('--step_size', type=int, required=False, default=1,
-                        help='The resolution at which the search tree is built. Default is 1: there is a node for every timestep')
+    parser.add_argument('--tree_search_func_name', type=str, required=False, default='ida_star',
+                        help='Tree search algorithm to use')
+    parser.add_argument('--heuristic_method', type=str, required=False, default='none',
+                        help='Heuristic method to use (when using A* or its variants)')
 
     args = parser.parse_args()
 
-    # For HPC purposes, allow 'none' to be passed as arg to policy_filename
-    if args.policy_filename == "none":
-        args.policy_filename = None
-
-    if args.cost_to_go == "true":
-        args.cost_to_go = True
-    elif args.cost_to_go == "false":
-        args.cost_to_go = False
-    print(args.cost_to_go)
+    if args.branching_threshold == -1: args.branching_threshold = None
+    if args.heuristic_method.lower() == 'none': args.heuristic_method = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
 
-    # Load parameters
-    with open(args.params_fn) as f:
-        params = json.load(f)
-
     # Update params
-    params.update({'decision_branching_threshold': args.decision_branching_threshold,
-                   'expansion_mode': args.expansion_mode,
-                   'cost_to_go': args.cost_to_go,
-                   'horizon': args.horizon,
-                   'step_size': args.step_size})
+    params = vars(args)
 
-    # Read the ARMA parameters. 
-    arma_params = json.load(open(args.arma_params_fn))
-    params.update({'arma_params': arma_params})
+    # Read the parameters
+    env_params = json.load(open(args.env_params_fn))
+    if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
+
+    # Set random seeds
+    print(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
     # Save params file to save_dir 
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
         fp.write(json.dumps(params, sort_keys=True, indent=4))
 
-    # Save arma params to save_dir
-    with open(os.path.join(args.save_dir, 'arma_params.json'), 'w') as fp:
-        fp.write(json.dumps(arma_params, sort_keys=True, indent=4))
+    # Save env params to save_dir
+    with open(os.path.join(args.save_dir, 'env_params.json'), 'w') as fp:
+        fp.write(json.dumps(env_params, sort_keys=True, indent=4))
 
     prof_name = os.path.basename(os.path.normpath(args.test_data)).split('.')[0]
 
@@ -90,34 +138,35 @@ if __name__ == "__main__":
 
     # Initialise environment with forecast profile and reference forecast (for scaling)
     profile_df = pd.read_csv(args.test_data)
-    env = make_env(mode='test', profiles_df=profile_df, **params)
+    env = make_env(mode='test', profiles_df=profile_df, **env_params)
 
     # Load policy 
     if args.policy_filename is not None:
-        policy_network = ACAgent(env, **params)
+        policy = ACAgent(env, test_seed=args.seed, **policy_params)
         if torch.cuda.is_available():
-            policy_network.cuda()
-        policy_network.load_state_dict(torch.load(args.policy_filename))        
-        policy_network.eval()
-        print("Using trained policy network")
+            policy.cuda()
+        policy.load_state_dict(torch.load(args.policy_filename))        
+        policy.eval()
+        print("Guided search")
     else:
-        policy_network = None
-        print("Using untrained policy network")
+        policy = None
+        print("Unguided search")
 
-    print(f"Using cost to go: {args.cost_to_go}")
-    print(f"Horizon: {args.horizon}")
+    # Convert the tree_search_method argument to a function:
+    func_list = [ida_star]
+    func_names = [f.__name__ for f in func_list]
+    funcs_dict = dict(zip(func_names, func_list))
 
     # Run the tree search
-    retain_tree = False if args.step_size > 1 else True
     s = time.time()
-    schedule_result, cost = tree_search.solve_rolling(env=env, 
-                                                H=args.horizon, 
-                                                policy_network=policy_network, 
-                                                expansion_mode=args.expansion_mode, 
-                                                cost_to_go=args.cost_to_go, 
-                                                step_size=args.step_size,
-                                                node_params=params)
-
+    schedule_result, cost, depths = solve_rolling_anytime(env=env, 
+                                                tree_search_func=funcs_dict[args.tree_search_func_name],
+                                                policy=policy,
+                                                **params)
     time_taken = time.time() - s
-    print("Time taken: {:.2f}".format(time_taken))
-    print("Cost: ${:.2f}".format(cost))
+
+    print(cost, time_taken)
+
+
+
+
