@@ -203,6 +203,7 @@ def save_results(prof_name,
 def save_results_rolling(prof_name, 
                          save_dir, 
                          schedule,
+                         real_net_demands,
                          cost, 
                          time,
                          lolp,
@@ -218,6 +219,7 @@ def save_results_rolling(prof_name,
     # Save schedule 
     columns =  ['schedule_' + str(i) for i in range(schedule.shape[1])]
     schedule_df = pd.DataFrame(schedule, columns=columns)
+    schedule_df['net_demand'] = real_net_demands
     schedule_df['profile'] = prof_name
     schedule_df.to_csv(os.path.join(save_dir, 'schedule.csv'), index=False)
 
