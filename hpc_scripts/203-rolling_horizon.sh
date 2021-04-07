@@ -11,7 +11,7 @@ for g in 10 20 30;
     do for heuristic_method in "none" "advanced_priority_list";
       do let secs=$t*48*2 && \
          time=$(date -d@$secs -u +%H:%M:%S) && \
-         qsub -l h_rt=$time submit_anytime_tree_search.sh $HOME/Scratch/results/${date}/guided_${tree_search_func_name}/g${g}/feb4_g${g}_t${t}_p${rho}_${heuristic_method} \
+         qsub -l h_rt=$time submit_rolling_tree_search.sh $HOME/Scratch/results/${date}/guided_${tree_search_func_name}/g${g}/feb4_g${g}_t${t}_p${rho}_${heuristic_method} \
 														 $HOME/AISO_HPC/best_policies/g${g}/params.json \
 														 $HOME/AISO_HPC/mar14/${g}_env_params.json \
 														 $HOME/AISO_HPC/best_policies/g${g}/ac_final.pt \
