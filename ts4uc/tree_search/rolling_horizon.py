@@ -29,6 +29,9 @@ def solve_rolling_anytime(env,
     env.reset() 
     operating_cost = 0
     depths = []
+
+    net_demand_scenarios = np.zeros((params.get('num_scenarios'), env.episode_length))
+
     for t in range(env.episode_length):
         # initialise env
         root = node_mod.Node(env=env,
@@ -43,8 +46,10 @@ def solve_rolling_anytime(env,
         demand_forecast = env.profiles_df.demand[t:].values
         wind_forecast = env.profiles_df.wind[t:].values
 
-        net_demand_scenarios = (demand_forecast + demand_errors) - (wind_forecast + wind_errors)
-        net_demand_scenarios = np.clip(net_demand_scenarios, env.min_demand, env.max_demand)
+        new_scenarios = (demand_forecast + demand_errors) - (wind_forecast + wind_errors)
+        new_scenarios = np.clip(new_scenarios, env.min_demand, env.max_demand)
+
+        net_demand_scenarios[:,env.episode_timestep+1:] = new_scenarios
 
         # find least expected cost path 
         path = tree_search_func(root,
@@ -65,7 +70,7 @@ def solve_rolling_anytime(env,
         # sample new state
         _, reward, _ = env.step(a_best, deterministic=False)
 
-        print(f"Period {root.state.episode_timestep}", np.array(a_best, dtype=int), -reward)
+        print(f"Period {root.state.episode_timestep}", np.array(a_best, dtype=int), np.round(-reward ,2))
 
         operating_cost -= reward
 
@@ -118,7 +123,6 @@ if __name__ == "__main__":
     if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
 
     # Set random seeds
-    print(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
@@ -165,7 +169,8 @@ if __name__ == "__main__":
                                                 **params)
     time_taken = time.time() - s
 
-    print(cost, time_taken)
+    print("Operating cost: ${:.2f}".format(cost))
+    print("Time taken: {:.2f}s".format(time_taken))
 
 
 
