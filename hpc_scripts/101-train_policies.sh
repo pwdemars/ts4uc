@@ -30,3 +30,11 @@ workers=8
 epochs=200000
 hrs=24
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101_g${g} $HOME/AISO_HPC/best_policies/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs
+
+# 6, 7, 8, 9 gens
+workers=8
+epochs=25000
+hrs=4
+for g in 6 7 8 9;
+do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101_g${g} $HOME/AISO_HPC/best_policies/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs ;
+done
