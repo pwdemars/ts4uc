@@ -106,7 +106,7 @@ def economic_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
 	fc = 0 
 	for commitment, nd in zip(uc_schedule.T, net_demand):
 		disp = economic_dispatch(commitment, nd, gen_info_sorted)
-		fc += np.sum(np.multiply(disp, np.square(gen_info_sorted.a.values)) + 
+		fc += np.sum(np.multiply(np.square(disp), gen_info_sorted.a.values) + 
 					 np.multiply(disp, gen_info_sorted.b.values) + 
 					 gen_info_sorted.c.values) * time_interval
 	return fc
