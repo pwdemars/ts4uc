@@ -1,0 +1,60 @@
+{
+    "ac_learning_rate": 3e-05,
+    "buffer_size": 2000,
+    "clip_ratio": 0.1,
+    "cr_learning_rate": 0.0003,
+    "credit_assignment_1hr": 0.9,
+    "demand_sigma": 7.5,
+    "dispatch_freq_mins": 30,
+    "entropy_coef": 0.05,
+    "env_params": {
+        "arma_params": {
+            "alphas_demand": [
+                0.63004456,
+                0.23178044,
+                0.08526726,
+                0.03136807,
+                0.01153967
+            ],
+            "alphas_wind": [
+                0.63004456,
+                0.23178044,
+                0.08526726,
+                0.03136807,
+                0.01153967
+            ],
+            "betas_demand": [
+                0.06364086,
+                0.02341217,
+                0.00861285,
+                0.00316849,
+                0.00116562
+            ],
+            "betas_wind": [
+                0.06364086,
+                0.02341217,
+                0.00861285,
+                0.00316849,
+                0.00116562
+            ],
+            "p": 5,
+            "q": 5,
+            "sigma_demand": 7.5,
+            "sigma_wind": 6
+        },
+        "dispatch_freq_mins": 30,
+        "num_gen": 5
+    },
+    "forecast_horizon_hrs": 12,
+    "num_epochs": 25000,
+    "num_gen": 5,
+    "num_layers": 3,
+    "num_nodes": 32,
+    "num_processes": 8,
+	"observation_processor": "LimitedHorizonProcessor",
+    "save_interval": 5000,
+    "seed": 2,
+    "startup_multiplier": 1,
+    "time_budget_hrs": 1,
+    "wind_sigma": 6
+}
