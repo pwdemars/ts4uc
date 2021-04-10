@@ -13,7 +13,7 @@ num_epochs=$5
 module load python3/3.7
 export OMP_NUM_THREADS=1
 
-mkdir $HOME/Scratch/results/$save_dir
+mkdir -p $HOME/Scratch/results/$save_dir
 
 cd $TMPDIR
 
