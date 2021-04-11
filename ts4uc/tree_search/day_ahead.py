@@ -93,6 +93,8 @@ if __name__ == "__main__":
 
     if args.branching_threshold == -1: args.branching_threshold = None
     if args.heuristic_method.lower() == 'none': args.heuristic_method = None
+    if args.policy_params_fn.lower() == 'none': args.policy_params_fn = None
+    if args.policy_filename.lower() == 'none': args.policy_filename = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
