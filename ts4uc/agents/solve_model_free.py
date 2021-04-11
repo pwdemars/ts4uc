@@ -53,12 +53,14 @@ if __name__ == "__main__":
     # Update params
     params = vars(args)
 
+    # Update params to note model_free
+    params.update({'expansion_mode': 'model_free'})
+
     # Read the parameters
     env_params = json.load(open(args.env_params_fn))
     policy_params = json.load(open(args.policy_params_fn))
 
     # Set random seeds
-    print(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
