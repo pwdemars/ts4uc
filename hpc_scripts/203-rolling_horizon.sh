@@ -7,7 +7,7 @@ date=$(date +"%y-%m-%d")
 rho=05
 tree_search_func_name="ida_star"
 for g in 10 20 30; 
-  do for t in 1 2 5 10 30 60;
+  do for t in 60;
     do for heuristic_method in "advanced_priority_list";
       do let secs=$t*48*2 && \
          time=$(date -d@$secs -u +%H:%M:%S) && \
