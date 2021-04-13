@@ -99,8 +99,6 @@ if __name__ == "__main__":
                         help="Filename for policy [.pt]. Set to 'none' or omit this argument to train from scratch", default=None)
     parser.add_argument('--test_data', '-t', type=str, required=True,
                         help='Location of problem file [.csv]')
-    parser.add_argument('--num_samples', type=int, required=False, default=1000,
-                        help='Number of times to sample running the schedules through the environment')
     parser.add_argument('--branching_threshold', type=float, required=False, default=0.05,
                         help='Branching threshold (for guided expansion)')
     parser.add_argument('--seed', type=int, required=False, default=np.random.randint(0,10000),
@@ -124,6 +122,9 @@ if __name__ == "__main__":
 
     # Update params
     params = vars(args)
+
+    # Add 'rolling'=True' to params
+    params.update({'rolling': True})
 
     # Read the parameters
     env_params = json.load(open(args.env_params_fn))
