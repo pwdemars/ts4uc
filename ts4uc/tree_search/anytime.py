@@ -11,10 +11,12 @@ import torch
 import argparse
 import json
 import random
+import signal
 
 from rl4uc.environment import make_env
 
 from ts4uc.tree_search import node as node_mod, expansion, informed_search
+from ts4uc.tree_search.algos import a_star
 from ts4uc import helpers
 from ts4uc.agents.ac_agent import ACAgent
 from ts4uc.tree_search.scenarios import get_net_demand_scenarios
@@ -62,10 +64,53 @@ def solve_day_ahead_anytime(env,
     return final_schedule, depths
 
 def ida_star(root,
+              time_budget,
+              net_demand_scenarios,
+              heuristic_method,
+              **policy_kwargs):
+
+    start_time = time.time()
+    
+    class TimeoutException(Exception):   # Custom exception class
+        pass
+
+    def timeout_handler(signum, frame):   # Custom signal handler
+        raise TimeoutException
+
+    # Change the behavior of SIGALRM
+    signal.signal(signal.SIGALRM, timeout_handler)
+
+    horizon = 0
+    best_path = []
+    while (time.time() - start_time) < time_budget:
+        time_remaining = time_budget - (time.time() - start_time)
+        signal.setitimer(signal.ITIMER_REAL, time_remaining)
+
+        horizon += 1
+        terminal_timestep = min(root.state.episode_timestep+horizon, root.state.episode_length-1)
+
+        try:
+            best_path, _ = a_star(root, terminal_timestep, net_demand_scenarios, heuristic_method, False, **policy_kwargs)
+        except TimeoutException:
+            break
+        else:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+
+        if len(best_path) == (root.state.episode_length - root.state.episode_timestep - 1): # No need to run if best path takes us to the end of the day
+            break
+
+    return best_path
+
+
+
+def ida_star_non_unix(root,
              time_budget,
              net_demand_scenarios,
              heuristic_method,
              **policy_kwargs):
+    """
+    IDA* that will run on non-Unix system (doesn't rely on signal). 
+    """
     start_time = time.time() 
     horizon = 0
     best_path = []
@@ -216,7 +261,7 @@ if __name__ == "__main__":
         print("Unguided search")
 
     # Convert the tree_search_method argument to a function:
-    func_list = [ida_star]
+    func_list = [ida_star, ida_star_non_unix]
     func_names = [f.__name__ for f in func_list]
     funcs_dict = dict(zip(func_names, func_list))
 

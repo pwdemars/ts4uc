@@ -58,6 +58,7 @@ def test_ida_star():
                                               **params)
     # Get distribution of costs for solution by running multiple times through environment
     test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
+    mean_cost = np.mean(test_costs)
 
-    assert np.isclose(np.mean(test_costs), 27395.61572936192)
+    assert np.isclose(mean_cost, 27635.52385991776), "Costs were: {}".format(mean_cost)
 

@@ -48,6 +48,7 @@ def a_star(node,
            terminal_timestep, 
            net_demand_scenarios,
            heuristic_method,
+           early_stopping=True,
            **policy_kwargs):
     """A*"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
@@ -68,7 +69,7 @@ def a_star(node,
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
 
             # Early stopping if root has one child
-            if node.parent is None and len(actions) == 1:
+            if early_stopping and node.parent is None and len(actions) == 1:
                 return [actions[0]], 0
 
 def rta_star(node,

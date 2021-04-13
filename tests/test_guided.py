@@ -29,36 +29,37 @@ NUM_SAMPLES = 1000
 
 def test_uniform_cost_search():
 
-	np.random.seed(SEED)
-	torch.manual_seed(SEED)
+        np.random.seed(SEED)
+        torch.manual_seed(SEED)
 
-	# Load parameters
-	env_params = json.load(open(ENV_PARAMS_FN))
-	policy_params = json.load(open(POLICY_PARAMS_FN))
+        # Load parameters
+        env_params = json.load(open(ENV_PARAMS_FN))
+        policy_params = json.load(open(POLICY_PARAMS_FN))
 
-	# Load profile 
-	profile_df = pd.read_csv(TEST_DATA_FN)[:TIME_PERIODS]
+        # Load profile 
+        profile_df = pd.read_csv(TEST_DATA_FN)[:TIME_PERIODS]
 
-	params = {'horizon': HORIZON,
-			  'branching_threshold': BRANCHING_THRESHOLD}
+        params = {'horizon': HORIZON,
+                          'branching_threshold': BRANCHING_THRESHOLD}
 
-	# Init env
-	env = make_env(mode='test', profiles_df=profile_df, **env_params)
+        # Init env
+        env = make_env(mode='test', profiles_df=profile_df, **env_params)
 
-	# Load policy
-	policy = ACAgent(env, test_seed=SEED, **policy_params)
-	policy.load_state_dict(torch.load(POLICY_FILENAME))
-	policy.eval()
+        # Load policy
+        policy = ACAgent(env, test_seed=SEED, **policy_params)
+        policy.load_state_dict(torch.load(POLICY_FILENAME))
+        policy.eval()
 
-	# Generate scenarios for demand and wind errors
-	scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
+        # Generate scenarios for demand and wind errors
+        scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
 
-	schedule_result, period_times = solve_day_ahead(env=env, 
-	                                  net_demand_scenarios=scenarios, 
-	                                  tree_search_func=uniform_cost_search,
-	                                  policy=policy,
-	                                  **params)
-	# Get distribution of costs for solution by running multiple times through environment
-	test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
+        schedule_result, period_times = solve_day_ahead(env=env, 
+                                          net_demand_scenarios=scenarios, 
+                                          tree_search_func=uniform_cost_search,
+                                          policy=policy,
+                                          **params)
+        # Get distribution of costs for solution by running multiple times through environment
+        test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
+        mean_cost = np.mean(test_costs)
 
-	assert np.isclose(np.mean(test_costs), 23342.663977103897)
+        assert np.isclose(mean_cost, 23508.283119377622), "Costs were: {}".format(mean_cost)
