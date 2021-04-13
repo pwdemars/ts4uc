@@ -191,7 +191,7 @@ def save_results(prof_name,
 
     if depths is not None:
         depths_df = pd.DataFrame({'period': np.arange(len(depths)),
-                                  'time': depths})
+                                  'depth': depths})
         depths_df.to_csv(os.path.join(save_dir, '{}_depths.csv'.format(prof_name)), index=False)
 
     # save time taken
