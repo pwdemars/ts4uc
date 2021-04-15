@@ -170,6 +170,7 @@ def save_results(prof_name,
                  lost_loads, 
                  time_taken,
                  period_time_taken=None,
+                 breadths=None,
                  depths=None):
     # save test costs
     all_test_costs = pd.DataFrame({prof_name: test_costs})
@@ -189,10 +190,14 @@ def save_results(prof_name,
                                      'time': period_time_taken})
         period_tt_df.to_csv(os.path.join(save_dir, '{}_period_times.csv'.format(prof_name)), index=False)
 
-    if depths is not None:
-        depths_df = pd.DataFrame({'period': np.arange(len(depths)),
-                                  'depth': depths})
-        depths_df.to_csv(os.path.join(save_dir, '{}_depths.csv'.format(prof_name)), index=False)
+    if (depths != None) or (breadths != None):
+        tree_df = pd.DataFrame({'period': np.arange(schedule.shape[0])})
+        if depths != None:
+            tree_df['depth'] = depths
+        if breadths != None:
+            tree_df['breadth'] = breadth
+                               
+        tree_df.to_csv(os.path.join(save_dir, '{}_tree.csv'.format(prof_name)), index=False)
 
     # save time taken
     with open(os.path.join(save_dir, '{}_time.txt'.format(prof_name)), 'w') as f:
