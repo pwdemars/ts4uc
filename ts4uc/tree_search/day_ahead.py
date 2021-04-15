@@ -39,6 +39,7 @@ def solve_day_ahead(env,
             path_cost=0)
 
     period_times = []
+    breadths = []
     for t in range(env.episode_length):
         period_start_time = time.time()
         terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
@@ -47,6 +48,9 @@ def solve_day_ahead(env,
                                       net_demand_scenarios,
                                       **params)
         a_best = path[0]
+
+        breadth = len(root.children)
+        breadths.append(breadth)
 
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
@@ -59,7 +63,7 @@ def solve_day_ahead(env,
 
         period_times.append(time.time()-period_start_time)
 
-    return final_schedule, period_times
+    return final_schedule, period_times, breadths
 
 if __name__ == "__main__":
 
@@ -152,7 +156,7 @@ if __name__ == "__main__":
 
     # Run the tree search
     s = time.time()
-    schedule_result, period_times = solve_day_ahead(env=env, 
+    schedule_result, period_times, breadths = solve_day_ahead(env=env, 
                                       net_demand_scenarios=scenarios, 
                                       tree_search_func=funcs_dict[args.tree_search_func_name],
                                       policy=policy,
@@ -169,6 +173,7 @@ if __name__ == "__main__":
                          test_costs=test_costs, 
                          lost_loads=lost_loads,
                          time_taken=time_taken,
+                         breadths=breadths,
                          period_time_taken=period_times)
 
     print("Done")
