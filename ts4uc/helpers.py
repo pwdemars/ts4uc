@@ -195,7 +195,7 @@ def save_results(prof_name,
         if depths != None:
             tree_df['depth'] = depths
         if breadths != None:
-            tree_df['breadth'] = breadth
+            tree_df['breadth'] = breadths
                                
         tree_df.to_csv(os.path.join(save_dir, '{}_tree.csv'.format(prof_name)), index=False)
 

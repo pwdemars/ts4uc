@@ -38,6 +38,7 @@ def solve_day_ahead_anytime(env,
             path_cost=0)
 
     depths = []
+    breadths= []
     for t in range(env.episode_length):
         s = time.time()
         path = tree_search_func(root, 
@@ -46,6 +47,9 @@ def solve_day_ahead_anytime(env,
                                       **params)
         depth = len(path)
         depths.append(depth)
+        breadth = len(root.children)
+        breadths.append(breadth)
+        
         if depth == 0:
             random_child_bytes = random.sample(list(root.children), 1)[0]
             a_best = root.children[random_child_bytes].action
@@ -61,7 +65,7 @@ def solve_day_ahead_anytime(env,
 
         gc.collect()
         
-    return final_schedule, depths
+    return final_schedule, depths, breadths
 
 def ida_star(root,
               time_budget,
@@ -81,7 +85,7 @@ def ida_star(root,
     signal.signal(signal.SIGALRM, timeout_handler)
 
     horizon = 0
-    best_path = []
+    best_path = [root.state.commitment]
     while (time.time() - start_time) < time_budget:
         time_remaining = time_budget - (time.time() - start_time)
         signal.setitimer(signal.ITIMER_REAL, time_remaining)
@@ -267,11 +271,11 @@ if __name__ == "__main__":
 
     # Run the tree search
     s = time.time()
-    schedule_result, depths = solve_day_ahead_anytime(env=env, 
-                                                      net_demand_scenarios=scenarios, 
-                                                      tree_search_func=funcs_dict[args.tree_search_func_name],
-                                                      policy=policy,
-                                                      **params)
+    schedule_result, depths, breadths = solve_day_ahead_anytime(env=env, 
+                                                                net_demand_scenarios=scenarios, 
+                                                                tree_search_func=funcs_dict[args.tree_search_func_name],
+                                                                policy=policy,
+                                                                **params)
     time_taken = time.time() - s
 
     # Get distribution of costs for solution by running multiple times through environment
@@ -284,6 +288,7 @@ if __name__ == "__main__":
                          test_costs=test_costs, 
                          lost_loads=lost_loads,
                          time_taken=time_taken,
+                         breadths=breadths,
                          depths=depths)
 
     print("Done")
