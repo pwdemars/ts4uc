@@ -53,11 +53,13 @@ def test_uniform_cost_search():
         # Generate scenarios for demand and wind errors
         scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
 
-        schedule_result, period_times = solve_day_ahead(env=env, 
+        solve_returns = solve_day_ahead(env=env, 
                                           net_demand_scenarios=scenarios, 
                                           tree_search_func=uniform_cost_search,
                                           policy=policy,
                                           **params)
+        schedule_result = solve_returns[0]
+
         # Get distribution of costs for solution by running multiple times through environment
         test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
         mean_cost = np.mean(test_costs)

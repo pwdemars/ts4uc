@@ -51,7 +51,7 @@ def solve_day_ahead_anytime(env,
         breadths.append(breadth)
         
         if depth == 0:
-            random_child_bytes = random.sample(list(root.children), 1)[0]
+            random_child_bytes = random.sample(list(root.children), 1)[0] #FIXME 
             a_best = root.children[random_child_bytes].action
         else:
             a_best = path[0]
@@ -85,7 +85,7 @@ def ida_star(root,
     signal.signal(signal.SIGALRM, timeout_handler)
 
     horizon = 0
-    best_path = [root.state.commitment]
+    best_path = []
     while (time.time() - start_time) < time_budget:
         time_remaining = time_budget - (time.time() - start_time)
         signal.setitimer(signal.ITIMER_REAL, time_remaining)
