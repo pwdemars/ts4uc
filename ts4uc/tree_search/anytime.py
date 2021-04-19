@@ -71,6 +71,7 @@ def ida_star(root,
               time_budget,
               net_demand_scenarios,
               heuristic_method,
+             recalc_costs=False,
               **policy_kwargs):
 
     start_time = time.time()
@@ -94,7 +95,13 @@ def ida_star(root,
         terminal_timestep = min(root.state.episode_timestep+horizon, root.state.episode_length-1)
 
         try:
-            best_path, _ = a_star(root, terminal_timestep, net_demand_scenarios, heuristic_method, False, **policy_kwargs)
+            best_path, _ = a_star(root,
+                                  terminal_timestep,
+                                  net_demand_scenarios,
+                                  heuristic_method,
+                                  early_stopping=False,
+                                  recalc_costs=recalc_costs,
+                                  **policy_kwargs)
         except TimeoutException:
             break
         else:

@@ -58,6 +58,7 @@ def solve_rolling_anytime(env,
         path = tree_search_func(root,
                                 time_budget,
                                 net_demand_scenarios,
+                                recalc_costs=True,
                                 **params)
 
         depth = len(path)
