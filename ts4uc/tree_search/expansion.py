@@ -56,7 +56,7 @@ def get_actions_with_policy(env, policy, **policy_kwargs):
 
     return actions
 
-def get_child_node(node, action, net_demand_scenarios=None, deterministic=True):
+def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, rolling_horizon=False):
     """
     Return a child node corresponding to taking `action` from the state 
     corresponding to `node`.
@@ -65,6 +65,8 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True):
     """
     if action.tobytes() in node.children:
         child = node.children[action.tobytes()]
+        if rolling_horizon == True: # If rolling horizon, then always recalculate costs 
+            child.step_cost = scenarios.calculate_expected_costs(child.state, net_demand_scenarios)
         child.path_cost = node.path_cost + child.step_cost
         return node.children[action.tobytes()]
 

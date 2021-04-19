@@ -48,6 +48,7 @@ def a_star(node,
            terminal_timestep, 
            net_demand_scenarios,
            heuristic_method,
+           rolling_horizon=False,
            early_stopping=True,
            **policy_kwargs):
     """A*"""
@@ -63,7 +64,7 @@ def a_star(node,
         actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = expansion.get_child_node(node, action, net_demand_scenarios_t)
+            child = expansion.get_child_node(node, action, net_demand_scenarios_t, rolling_horizon)
             child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep, heuristic_method)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost + child.heuristic_cost, id(child), child))

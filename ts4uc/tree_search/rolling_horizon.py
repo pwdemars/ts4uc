@@ -35,14 +35,14 @@ def solve_rolling_anytime(env,
 
     net_demand_scenarios = np.zeros((params.get('num_scenarios'), env.episode_length))
 
+    # initialise env
+    root = node_mod.Node(env=env,
+            parent=None,
+            action=None,
+            step_cost=0,
+            path_cost=0)
+    
     for t in range(env.episode_length):
-        # initialise env
-        root = node_mod.Node(env=env,
-                parent=None,
-                action=None,
-                step_cost=0,
-                path_cost=0)
-
         # generate new scenarios, seeded by the ARMA processes in env. 
         remaining_periods = env.episode_length - t 
         demand_errors, wind_errors = scenarios.sample_errors(env, params.get('num_scenarios'), remaining_periods, seeded=True)
@@ -56,9 +56,9 @@ def solve_rolling_anytime(env,
 
         # find least expected cost path 
         path = tree_search_func(root,
-                               time_budget,
-                               net_demand_scenarios,
-                               **params)
+                                time_budget,
+                                net_demand_scenarios,
+                                **params)
 
         depth = len(path)
         depths.append(depth)
@@ -73,11 +73,14 @@ def solve_rolling_anytime(env,
         # sample new state
         _, reward, _ = env.step(a_best, deterministic=False)
 
-        print(f"Period {root.state.episode_timestep}", np.array(a_best, dtype=int), np.round(-reward ,2))
+        print(f"Period {env.episode_timestep}", np.array(a_best, dtype=int), np.round(-reward ,2))
 
         operating_cost -= reward
         real_net_demands.append(env.net_demand)
         if env.ens: ens_count += 1
+
+        root = root.children[a_best.tobytes()]
+        root.parent, root.path_cost = None, 0
 
         gc.collect()
 
