@@ -45,7 +45,7 @@ def solve_rolling_anytime(env,
 
         # generate new scenarios, seeded by the ARMA processes in env. 
         remaining_periods = env.episode_length - t 
-        demand_errors, wind_errors = scenarios.sample_errors(env, params.get('num_scenarios'), remaining_periods)
+        demand_errors, wind_errors = scenarios.sample_errors(env, params.get('num_scenarios'), remaining_periods, seeded=True)
         demand_forecast = env.profiles_df.demand[t:].values
         wind_forecast = env.profiles_df.wind[t:].values
 

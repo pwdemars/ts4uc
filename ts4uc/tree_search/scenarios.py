@@ -4,7 +4,7 @@
 import numpy as np
 import copy
 
-def sample_errors(env, N, horizon):
+def sample_errors(env, N, horizon, seeded=False):
     """
     Calculate N realisations of net demand for demand and wind forecast errors
     using ARMA processes that may be at t>=0. 
@@ -14,8 +14,10 @@ def sample_errors(env, N, horizon):
     for i in range(N):
         arma_demand = copy.deepcopy(env.arma_demand)
         arma_wind = copy.deepcopy(env.arma_wind)
-        arma_demand.reset()
-        arma_wind.reset()
+
+        if seeded==False:
+            arma_demand.reset()
+            arma_wind.reset()
 
         for j in range(horizon):
             demand_errors[i,j] = arma_demand.step()
