@@ -18,7 +18,7 @@ for g in 10 20 30;
 														 ${t} \
 														 0.${rho} \
 														 ${tree_search_func_name} \
-														 $HOME/AISO_HPC/AISO/input_g${g}_d30.txt \
+														 $HOME/ts4uc/data/hpc_params/input_202_g30.txt \
 														 $heuristic_method ;
 	  done ;
 	done ;
