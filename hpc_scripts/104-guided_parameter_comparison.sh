@@ -13,7 +13,7 @@ do qsub -l h_rt=6:00:00 submit_tree_search.sh $HOME/Scratch/results/${date}_104/
 	${H} \
 	0.${rho} \
 	uniform_cost_search \
-	$HOME/AISO_HPC/AISO/input_g5_d30.txt ;
+	$HOME/ts4uc/data/hpc_params/input_day_ahead_g5.txt ;
 done
 done
 
@@ -26,7 +26,7 @@ do qsub -l h_rt=1:00:00 submit_tree_search.sh $HOME/Scratch/results/${date}_104/
 	${H} \
 	0.${rho} \
 	uniform_cost_search \
-	$HOME/AISO_HPC/AISO/input_g5_d30.txt ;
+	$HOME/ts4uc/data/hpc_params/input_day_ahead_g5.txt ;
 done
 done
 
@@ -39,7 +39,7 @@ do qsub -l h_rt=24:00:00 submit_tree_search.sh $HOME/Scratch/results/${date}_104
 	${H} \
 	0.${rho} \
 	uniform_cost_search \
-	$HOME/AISO_HPC/AISO/input_g5_d30.txt ;
+	$HOME/ts4uc/data/hpc_params/input_day_ahead_g5.txt ;
 done
 done
 
@@ -52,6 +52,6 @@ do qsub -l h_rt=24:00:00 submit_tree_search.sh $HOME/Scratch/results/${date}_104
 	${H} \
 	0.${rho} \
 	uniform_cost_search \
-	$HOME/AISO_HPC/AISO/input_g5_d30.txt ;
+	$HOME/ts4uc/data/hpc_params/input_day_ahead_g5.txt ;
 done
 done

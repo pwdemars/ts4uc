@@ -18,7 +18,7 @@ for g in 10 20 30;
 														 ${t} \
 														 0.${rho} \
 														 ${tree_search_func_name} \
-														 $HOME/ts4uc/data/hpc_params/input_203_g${g}.txt \
+														 $HOME/ts4uc/data/hpc_params/input_day_ahead_g${g}.txt \
 														 $heuristic_method ;
 	  done ;
 	done ;
