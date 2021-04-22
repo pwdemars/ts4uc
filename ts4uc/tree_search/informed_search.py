@@ -20,7 +20,7 @@ def check_lost_load(state, horizon):
 			return np.inf
 	return 0
 
-def priority_list(state, horizon): 
+def simple_priority_list(state, horizon): 
 	"""
 	A simple priority list algorithm for estimating operating costs.
 
@@ -191,7 +191,7 @@ def pl_plus_ll(state, horizon):
 	if check_lost_load(state, horizon) == np.inf:
 		return np.inf
 	else:
-		return priority_list(state, horizon)
+		return simple_priority_list(state, horizon)
 
 def heuristic(node, horizon, method=None):
 	"""Simple heuristic that givees np.inf if a node's state is infeasible, else 0"""
@@ -201,8 +201,8 @@ def heuristic(node, horizon, method=None):
 		return 0
 	elif method=='check_lost_load':
 		heuristic_cost = check_lost_load(node.state, horizon)
-	elif method=='priority_list':
-		heuristic_cost = priority_list(node.state, horizon)
+	elif method=='simple_priority_list':
+		heuristic_cost = simple_priority_list(node.state, horizon)
 	elif method=='pl_plus_ll':
 		heuristic_cost = pl_plus_ll(node.state, horizon)
 	elif method=='advanced_priority_list':
