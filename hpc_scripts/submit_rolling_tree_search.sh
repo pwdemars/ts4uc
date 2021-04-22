@@ -29,7 +29,7 @@ module load python3/3.7
 
 cd $TMPDIR
 
-python $HOME/ts4uc/ts4uc/tree_search/rolling_horizon.py --save_dir ${save_dir}/${prof_name}/${seed} \
+python $HOME/ts4uc/ts4uc/tree_search/rolling_horizon.py --save_dir ${save_dir}/${prof_name}/${index} \
 												  --policy_params_fn $params_filename \
 												  --env_params_fn $env_params_filename \
 												  --policy_filename $policy_filename \

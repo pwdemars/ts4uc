@@ -26,7 +26,7 @@ def solve_rolling_anytime(env,
     Solve the UC problem in a rolling context, beginning with the state defined by env.
     """
     final_schedule = np.zeros((env.episode_length, env.num_gen))
-    env.reset() 
+    env.reset()
     operating_cost = 0
     depths = []
     real_net_demands = []
@@ -79,6 +79,8 @@ def solve_rolling_anytime(env,
         operating_cost -= reward
         real_net_demands.append(env.net_demand)
         if env.ens: ens_count += 1
+
+        print(env.arma_demand.xs[0])
 
         root = root.children[a_best.tobytes()]
         root.parent, root.path_cost = None, 0

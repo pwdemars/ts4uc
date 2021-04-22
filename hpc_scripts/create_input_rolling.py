@@ -15,7 +15,8 @@ with open(input_fn, 'w') as f:
 all_fns = [f for f in os.listdir(data_dir) if '.csv' in f]
 all_fns_reps = np.repeat(all_fns, NUM_SCENARIOS)
 init_seed = 123
-seeds = np.tile(np.arange(NUM_SCENARIOS), len(all_fns)) + init_seed
+# seeds = np.tile(np.arange(NUM_SCENARIOS), len(all_fns)) + init_seed
+seeds = np.random.randint(1e6, size=(NUM_SCENARIOS*len(all_fns)))
 
 for i, (fn, seed) in enumerate(zip(all_fns_reps, seeds)):
     prof_name = fn.split('.')[0]
