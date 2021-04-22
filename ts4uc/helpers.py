@@ -228,6 +228,13 @@ def save_results_rolling(prof_name,
     schedule_df['profile'] = prof_name
     schedule_df.to_csv(os.path.join(save_dir, 'schedule.csv'), index=False)
 
+    # Save depths
+    if depths is not None:
+        tree_df = pd.DataFrame({'period': np.arange(schedule.shape[0])})
+        tree_df['depth'] = depths
+        tree_df.to_csv(os.path.join(save_dir, 'tree.csv'), index=False)
+        
+
 def get_scenarios(env, N):
     """
     Calculate N realisations of net demand for demand and wind forecast errors

@@ -182,12 +182,13 @@ if __name__ == "__main__":
     time_taken = time.time() - s
 
     helpers.save_results_rolling(prof_name=prof_name,
-                                save_dir=args.save_dir,
-                                schedule=schedule_result,
-                                real_net_demands=real_net_demands,
-                                cost=cost,
-                                time=time_taken,
-                                lolp=lolp
+                                 save_dir=args.save_dir,
+                                 schedule=schedule_result,
+                                 real_net_demands=real_net_demands,
+                                 cost=cost,
+                                 time=time_taken,
+                                 lolp=lolp,
+                                 depths=depths
                                 )
 
     print("Operating cost: ${:.2f}".format(cost))
