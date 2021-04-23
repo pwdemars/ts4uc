@@ -141,18 +141,23 @@ def plot_demand_realisations(env, num_samples=10):
 
     plt.show()
 
-def test_schedule(env, schedule, seed=999, num_samples=1000, deterministic=False):
+
+def test_schedule(env,
+                  schedule,
+                  seed=999,
+                  num_samples=1000,
+                  deterministic=False):
     test_costs = []
     lost_loads = []
     print("Testing schedule...")
     np.random.seed(seed)
     for i in range(num_samples):
         env.reset()
-        total_reward = 0 
+        total_reward = 0
         ll = 0
         for action in schedule:
-            action = np.where(np.array(action)>0, 1, 0)
-            obs,reward,done = env.step(action, deterministic)
+            action = np.where(np.array(action) > 0, 1, 0)
+            obs, reward, done = env.step(action, deterministic)
             total_reward += reward
             if env.ens:
                 ll += 1
@@ -162,12 +167,13 @@ def test_schedule(env, schedule, seed=999, num_samples=1000, deterministic=False
 
     return test_costs, lost_loads
 
-def save_results(prof_name, 
-                 save_dir, 
-                 num_gen, 
+
+def save_results(prof_name,
+                 save_dir,
+                 num_gen,
                  schedule,
-                 test_costs, 
-                 lost_loads, 
+                 test_costs,
+                 lost_loads,
                  time_taken,
                  period_time_taken=None,
                  breadths=None,
@@ -176,12 +182,12 @@ def save_results(prof_name,
     all_test_costs = pd.DataFrame({prof_name: test_costs})
     all_test_costs.to_csv(os.path.join(save_dir, '{}_costs.csv'.format(prof_name)), index=False, compression=None)
 
-    # save lost load events
+    # save lost load events
     all_lost_loads = pd.DataFrame({prof_name: lost_loads})
     all_lost_loads.to_csv(os.path.join(save_dir, '{}_lost_load.csv'.format(prof_name)), index=False, compression=None)
 
     # save schedule
-    columns =  ['schedule_' + str(i) for i in range(num_gen)]
+    columns = ['schedule_' + str(i) for i in range(num_gen)]
     schedule_df = pd.DataFrame(schedule, columns=columns)
     schedule_df.to_csv(os.path.join(save_dir, '{}_solution.csv'.format(prof_name)), index=False)
 
@@ -251,6 +257,7 @@ def get_scenarios(env, N):
             wind_errors[i,j] = env.arma_wind.step()
 
     return demand_errors, wind_errors
+
 
 def save_branches(prof_name, save_dir, n_branches):
     """
