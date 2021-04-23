@@ -67,15 +67,16 @@ def solve_day_ahead_anytime(env,
         
     return final_schedule, depths, breadths
 
+
 def ida_star(root,
-              time_budget,
-              net_demand_scenarios,
-              heuristic_method,
+             time_budget,
+             net_demand_scenarios,
+             heuristic_method,
              recalc_costs=False,
-              **policy_kwargs):
+             **policy_kwargs):
 
     start_time = time.time()
-    
+
     class TimeoutException(Exception):   # Custom exception class
         pass
 
@@ -92,7 +93,8 @@ def ida_star(root,
         signal.setitimer(signal.ITIMER_REAL, time_remaining)
 
         horizon += 1
-        terminal_timestep = min(root.state.episode_timestep+horizon, root.state.episode_length-1)
+        terminal_timestep = min(root.state.episode_timestep+horizon,
+                                root.state.episode_length-1)
 
         try:
             best_path, _ = a_star(root,
@@ -107,32 +109,35 @@ def ida_star(root,
         else:
             signal.setitimer(signal.ITIMER_REAL, 0)
 
-        if len(best_path) == (root.state.episode_length - root.state.episode_timestep - 1): # No need to run if best path takes us to the end of the day
+        # No need to run if best path takes us to the end of the day
+        if len(best_path) == (root.state.episode_length -
+                              root.state.episode_timestep - 1):
             break
 
     return best_path
 
 
-
 def ida_star_non_unix(root,
-             time_budget,
-             net_demand_scenarios,
-             heuristic_method,
-             **policy_kwargs):
+                      time_budget,
+                      net_demand_scenarios,
+                      heuristic_method,
+                      **policy_kwargs):
     """
-    IDA* that will run on non-Unix system (doesn't rely on signal). 
+    IDA* that will run on non-Unix system (doesn't rely on signal).
     """
-    start_time = time.time() 
+    start_time = time.time()
     horizon = 0
     best_path = []
     node = root
     while (time.time() - start_time) < time_budget:
 
-        horizon += 1 # Increment the horizon (iterative deepening)
-        terminal_timestep = min(root.state.episode_timestep+horizon, root.state.episode_length-1) 
+        horizon += 1  # Increment the horizon (iterative deepening)
+        terminal_timestep = min(root.state.episode_timestep+horizon,
+                                root.state.episode_length-1)
         print("Horizon: {}".format(horizon))
 
-        if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
+        if node.state.is_terminal() or (node.state.episode_timestep ==
+                                        terminal_timestep):
             best_path, _ = node_mod.get_solution(node)
             return best_path
 

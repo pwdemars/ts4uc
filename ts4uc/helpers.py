@@ -154,9 +154,11 @@ def run_schedule(env, schedule, deterministic=False):
             ll += 1
             print("ENS at period {}; "
                   "forecast: {:.2f}; "
-                  "real: {:.2f}".format(env.episode_timestep,
-                                        env.forecast - env.wind_forecast,
-                                        env.net_demand))
+                  "real: {:.2f}; "
+                  "committed: {:.2f}".format(env.episode_timestep,
+                                             env.forecast - env.wind_forecast,
+                                             env.net_demand,
+                                             np.dot(action, env.max_output)))
     return cost, ll
 
 

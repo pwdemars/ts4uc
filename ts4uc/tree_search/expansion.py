@@ -65,7 +65,7 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, 
     """
     if action.tobytes() in node.children:
         child = node.children[action.tobytes()]
-        if recalc_costs == True: # If rolling horizon, then always recalculate costs 
+        if recalc_costs == True: # If rolling horizon, then always recalculate costs
             child.step_cost = scenarios.calculate_expected_costs(child.state, net_demand_scenarios)
         child.path_cost = node.path_cost + child.step_cost
         return node.children[action.tobytes()]
