@@ -20,8 +20,8 @@ SEED = 1
 NUM_SCENARIOS = 100
 TEST_SAMPLE_SEED = 999
 NUM_SAMPLES = 1000
-TIME_BUDGET = 1
-TIME_PERIODS = 5
+TIME_BUDGET = 2
+TIME_PERIODS = 3
 HEURISTIC_METHOD = 'advanced_priority_list'
 
 def test_ida_star():
@@ -62,5 +62,5 @@ def test_ida_star():
     test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
     mean_cost = np.mean(test_costs)
 
-    assert np.isclose(mean_cost, 27635.52385991776), "Costs were: {}".format(mean_cost)
+    assert np.isclose(mean_cost, 16864.559364953846), "Costs were: {}".format(mean_cost)
 

@@ -142,6 +142,24 @@ def plot_demand_realisations(env, num_samples=10):
     plt.show()
 
 
+def run_schedule(env, schedule, deterministic=False):
+    env.reset()
+    cost = 0
+    ll = 0
+    for action in schedule:
+        action = np.where(np.array(action) > 0, 1, 0)
+        obs, reward, done = env.step(action, deterministic)
+        cost -= reward
+        if env.ens:
+            ll += 1
+            print("ENS at period {}; "
+                  "forecast: {:.2f}; "
+                  "real: {:.2f}".format(env.episode_timestep,
+                                        env.forecast - env.wind_forecast,
+                                        env.net_demand))
+    return cost, ll
+
+
 def test_schedule(env,
                   schedule,
                   seed=999,
@@ -152,18 +170,9 @@ def test_schedule(env,
     print("Testing schedule...")
     np.random.seed(seed)
     for i in range(num_samples):
-        env.reset()
-        total_reward = 0
-        ll = 0
-        for action in schedule:
-            action = np.where(np.array(action) > 0, 1, 0)
-            obs, reward, done = env.step(action, deterministic)
-            total_reward += reward
-            if env.ens:
-                ll += 1
-                print("ENS at period {}; forecast: {:.2f}; real: {:.2f}".format(env.episode_timestep, env.forecast - env.wind_forecast, env.net_demand))
-        test_costs.append(-total_reward)
-        lost_loads.append(ll)
+        cost_s, ll_s = run_schedule(env, schedule, deterministic)
+        test_costs.append(cost_s)
+        lost_loads.append(ll_s)
 
     return test_costs, lost_loads
 
