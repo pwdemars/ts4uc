@@ -141,52 +141,67 @@ def ida_star_non_unix(root,
             best_path, _ = node_mod.get_solution(node)
             return best_path
 
-        node = root # Return to root
+        node = root  # Return to root
 
         frontier = queue.PriorityQueue()
-        frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
+        # include the object id in the priority queue.
+        # prevents type error when path_costs are identical.
+        frontier.put((0, id(node), node))
 
         while (time.time() - start_time) < time_budget:
             assert frontier, "Failed to find a goal state"
             node = frontier.get()[2]
-            if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
+            if node.state.is_terminal() or (node.state.episode_timestep ==
+                                            terminal_timestep):
                 best_path, _ = node_mod.get_solution(node)
                 break
             actions = expansion.get_actions(node, **policy_kwargs)
 
             for action in actions:
-                net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-                child = expansion.get_child_node(node, action, net_demand_scenarios_t)
-                child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep, heuristic_method)
+                net_demand_scenarios_t = np.take(net_demand_scenarios,
+                                                 node.state.episode_timestep+1,
+                                                 axis=1)
+                child = expansion.get_child_node(node,
+                                                 action,
+                                                 net_demand_scenarios_t)
+                child.heuristic_cost = informed_search.heuristic(child,
+                                                                 (terminal_timestep -
+                                                                  child.state.episode_timestep),
+                                                                 heuristic_method)
                 node.children[action.tobytes()] = child
-                frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
-
-                # Early stopping if root has one child
-                # if node.parent is None and len(actions) == 1:
-                #     print('yes')
-                #     best_path = [actions[0]]
-                #     # return best_path
+                frontier.put((child.path_cost + child.heuristic_cost,
+                              id(child),
+                              child))
 
     return best_path
 
-def anytime_uniform_cost_search(node, 
-                        terminal_timestep, 
-                        net_demand_scenarios,
-                        **policy_kwargs):
+
+def anytime_uniform_cost_search(node,
+                                terminal_timestep,
+                                net_demand_scenarios,
+                                **policy_kwargs):
     """Uniform cost search with backup"""
-    if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
+    if node.state.is_terminal() or (node.state.episode_timestep ==
+                                    terminal_timestep):
         return node_mod.get_solution(node)
     frontier = queue.PriorityQueue()
-    frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
+    # include the object id in the priority queue.
+    # prevents type error when path_costs are identical.
+    frontier.put((0, id(node), node))
     while True:
         assert frontier, "Failed to find a goal state"
         node = frontier.get()[2]
-        if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
+        if node.state.is_terminal() or (node.state.episode_timestep ==
+                                        terminal_timestep):
             return node_mod.get_solution(node)
         actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
-            net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = expansion.get_child_node(node, action, net_demand_scenarios_t)
+            net_demand_scenarios_t = np.take(net_demand_scenarios,
+                                             node.state.episode_timestep+1,
+                                             axis=1)
+            child = expansion.get_child_node(node,
+                                             action,
+                                             net_demand_scenarios_t)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost, id(child), child))
 
@@ -194,6 +209,7 @@ def anytime_uniform_cost_search(node,
             if node.parent is None and len(actions) == 1:
                 return [actions[0]], 0
         backup(node)
+
 
 if __name__ == "__main__":
 
@@ -225,8 +241,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.branching_threshold == -1: args.branching_threshold = None
-    if args.heuristic_method.lower() == 'none': args.heuristic_method = None
+    if args.branching_threshold == -1:
+        args.branching_threshold = None
+    if args.heuristic_method.lower() == 'none':
+        args.heuristic_method = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
@@ -236,14 +254,15 @@ if __name__ == "__main__":
 
     # Read the parameters
     env_params = json.load(open(args.env_params_fn))
-    if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
+    if args.policy_params_fn is not None:
+        policy_params = json.load(open(args.policy_params_fn))
 
     # Set random seeds
     print(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    # Save params file to save_dir 
+    # Save params file to save_dir
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
         fp.write(json.dumps(params, sort_keys=True, indent=4))
 
