@@ -1,6 +1,5 @@
 #/bin/bash
 
-module load python3/recommended
 for g in 10 20 30 ; do python create_input_rolling_scenarios.py ../data/day_ahead/${g}gen/30min $HOME/ts4uc/data/hpc_params/input_203_g${g}_scenarios.txt ; done
 
 # set today's date to use as save directory
