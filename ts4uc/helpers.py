@@ -9,6 +9,8 @@ Created on Tue Mar  3 16:55:21 2020
 import numpy as np
 import pandas as pd
 import os
+from pathlib import Path
+import json
 
 import rl4uc.helpers as rl4uc_helpers
 
@@ -113,20 +115,20 @@ def calculate_gamma(credit_assignment_1hr, dispatch_freq_mins):
 
 
 def plot_demand_realisations(env, num_samples=10):
-    import matplotlib.pyplot as plt 
-    
+    import matplotlib.pyplot as plt
+   
     seed = np.random.randint(10000)
     
     for i in range(num_samples):
         np.random.seed(seed)
         env.reset()
         np.random.seed()
-        
+       
         demands = []
         winds = []
         net_demands = []
         net_forecasts = []
-        
+       
         for j in range(env.episode_length):
             env.step(np.ones(env.num_gen))
             demands.append(env.demand_real)
@@ -146,9 +148,11 @@ def run_schedule(env, schedule, deterministic=False):
     env.reset()
     cost = 0
     ll = 0
+    print('----------------')
     for action in schedule:
         action = np.where(np.array(action) > 0, 1, 0)
         obs, reward, done = env.step(action, deterministic)
+        print(env.arma_demand.xs[0])
         cost -= reward
         if env.ens:
             ll += 1
@@ -276,3 +280,18 @@ def save_branches(prof_name, save_dir, n_branches):
     """
     fn = os.path.join(save_dir, '{}_branches.txt'.format(prof_name))
     np.savetxt(fn, n_branches, fmt='%d')
+
+
+def retrieve_test_problem(num_gen, prof_name):
+    fn = Path(__file__).parent / '../data/day_ahead/{}gen/30min/{}.csv'.format(num_gen, prof_name)
+    return pd.read_csv(fn)
+
+
+def retrieve_env_params(num_gen):
+    fn = Path(__file__).parent / '../data/day_ahead/{}gen/30min/env_params.json'.format(num_gen)
+    return json.load(open(fn))
+
+
+def retrieve_error_scenarios(num_gen):
+    fn = Path(__file__).parent / '../data/error_scenarios/{}gen_scenarios.csv'.format(num_gen)
+    return pd.read_csv(fn)
