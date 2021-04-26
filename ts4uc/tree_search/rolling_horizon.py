@@ -21,6 +21,7 @@ from ts4uc.agents.ac_agent import ACAgent
 def solve_rolling_anytime(env,
                           time_budget,
                           tree_search_func,
+                          real_errors=None,
                           **params):
     """
     Solve the UC problem in a rolling context, beginning with the state defined by env.
@@ -75,8 +76,15 @@ def solve_rolling_anytime(env,
 
         final_schedule[t, :] = a_best
 
+        if real_errors != None:
+            s_error = real_errors.iloc[t]
+            errors = {'demand': (s_error.demand_x, s_error.demand_z),
+                      'wind': (s_error.wind_x, s_error.wind_z)}
+        else:
+            errors = None
+        
         # sample new state
-        _, reward, _ = env.step(a_best, deterministic=False)
+        _, reward, _ = env.step(a_best, errors=errors)
 
         print(f"Period {env.episode_timestep}", np.array(a_best, dtype=int), np.round(-reward ,2))
 
