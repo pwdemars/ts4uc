@@ -11,13 +11,14 @@ from ts4uc.agents.ac_agent import ACAgent
 from ts4uc.tree_search.algos import uniform_cost_search, a_star, rta_star, brute_force
 
 import numpy as np
-import argparse 
+import argparse
 import torch
 import pandas as pd
 import os
 import json
 import gc
 import time
+
 
 def solve_day_ahead(env, 
                     horizon, 
@@ -71,11 +72,11 @@ if __name__ == "__main__":
     parser.add_argument('--save_dir', '-s', type=str, required=True,
                         help='Directory to save results')
     parser.add_argument('--policy_params_fn', '-pp', type=str, required=False,
-                        help='Filename for parameters')
+                        help='Filename for parameters', default='none')
     parser.add_argument('--env_params_fn', '-e', type=str, required=True,
                         help='Filename for environment parameters, including ARMAs, number of generators, dispatch frequency')
     parser.add_argument('--policy_filename', '-pf', type=str, required=False,
-                        help="Filename for policy [.pt]. Set to 'none' or omit this argument to train from scratch", default=None)
+                        help="Filename for policy [.pt]. Set to 'none' or omit this argument to train from scratch", default='none')
     parser.add_argument('--test_data', '-t', type=str, required=True,
                         help='Location of problem file [.csv]')
     parser.add_argument('--num_samples', type=int, required=False, default=1000,
@@ -95,10 +96,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.branching_threshold == -1: args.branching_threshold = None
-    if args.heuristic_method.lower() == 'none': args.heuristic_method = None
-    if args.policy_params_fn.lower() == 'none': args.policy_params_fn = None
-    if args.policy_filename.lower() == 'none': args.policy_filename = None
+    if args.branching_threshold == -1:
+        args.branching_threshold = None
+    if args.heuristic_method.lower() == 'none':
+        args.heuristic_method = None
+    if args.policy_params_fn.lower() == 'none':
+        args.policy_params_fn = None
+    if args.policy_filename.lower() == 'none':
+        args.policy_filename = None
 
     # Create results directory
     os.makedirs(args.save_dir, exist_ok=True)
@@ -108,14 +113,15 @@ if __name__ == "__main__":
 
     # Read the parameters
     env_params = json.load(open(args.env_params_fn))
-    if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
+    if args.policy_params_fn is not None:
+        policy_params = json.load(open(args.policy_params_fn))
 
     # Set random seeds
     print(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    # Save params file to save_dir 
+    # Save params file to save_dir
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
         fp.write(json.dumps(params, sort_keys=True, indent=4))
 
