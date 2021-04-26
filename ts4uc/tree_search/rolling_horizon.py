@@ -76,7 +76,7 @@ def solve_rolling_anytime(env,
 
         final_schedule[t, :] = a_best
 
-        if real_errors != None:
+        if isinstance(real_errors, pd.DataFrame):
             s_error = real_errors.iloc[t]
             errors = {'demand': (s_error.demand_x, s_error.demand_z),
                       'wind': (s_error.wind_x, s_error.wind_z)}
@@ -91,8 +91,6 @@ def solve_rolling_anytime(env,
         operating_cost -= reward
         real_net_demands.append(env.net_demand)
         if env.ens: ens_count += 1
-
-        print(env.arma_demand.xs[0])
 
         root = root.children[a_best.tobytes()]
         root.parent, root.path_cost = None, 0
@@ -123,12 +121,14 @@ if __name__ == "__main__":
                         help='Set random seed')
     parser.add_argument('--time_budget', type=float, required=False, default=1,
                         help='Time budget in seconds for anytime algorithm')
-    parser.add_argument('--num_scenarios', type=int, required=False, default=100,
-                        help='Number of scenarios to use when calculating expected costs')
     parser.add_argument('--tree_search_func_name', type=str, required=False, default='ida_star',
                         help='Tree search algorithm to use')
+    parser.add_argument('--num_scenarios', type=int, required=False, default=100,
+                        help='Number of scenarios to use when calculating expected costs')
     parser.add_argument('--heuristic_method', type=str, required=False, default='none',
                         help='Heuristic method to use (when using A* or its variants)')
+    parser.add_argument('--error_scenario_idx', type=str, required=False, default=None,
+                        help='Scenario index if running a specific scenario for forecast errors')
 
     args = parser.parse_args()
 
@@ -147,6 +147,14 @@ if __name__ == "__main__":
     # Read the parameters
     env_params = json.load(open(args.env_params_fn))
     if args.policy_params_fn is not None: policy_params = json.load(open(args.policy_params_fn))
+
+    # Read the error scenarios
+    if args.error_scenario_idx != None:
+        real_errors = helpers.retrieve_error_scenarios(env_params.get('num_gen'))
+        real_errors = real_errors[real_errors.scenario==int(args.error_scenario_idx)]
+        real_errors = real_errors.set_index('period')
+    else:
+        real_errors = None
 
     # Set random seeds
     np.random.seed(args.seed)
@@ -190,9 +198,10 @@ if __name__ == "__main__":
     # Run the tree search
     s = time.time()
     schedule_result, cost, lolp, real_net_demands, depths = solve_rolling_anytime(env=env, 
-                                                                        tree_search_func=funcs_dict[args.tree_search_func_name],
-                                                                        policy=policy,
-                                                                        **params)
+                                                                                  tree_search_func=funcs_dict[args.tree_search_func_name],
+                                                                                  policy=policy,
+                                                                                  real_errors=real_errors,
+                                                                                  **params)
     time_taken = time.time() - s
 
     helpers.save_results_rolling(prof_name=prof_name,
