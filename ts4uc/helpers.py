@@ -148,11 +148,9 @@ def run_schedule(env, schedule, deterministic=False):
     env.reset()
     cost = 0
     ll = 0
-    print('----------------')
     for action in schedule:
         action = np.where(np.array(action) > 0, 1, 0)
         obs, reward, done = env.step(action, deterministic)
-        print(env.arma_demand.xs[0])
         cost -= reward
         if env.ens:
             ll += 1
