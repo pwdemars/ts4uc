@@ -20,8 +20,8 @@ qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101/g${g} $HO
 # 20 gen: 8 workers, 100,000 epochs
 g=20
 workers=8
-epochs=100000
-hrs=12
+epochs=200000
+hrs=18
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101/g${g} $HOME/ts4uc/data/policy_params/exp101/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs
 
 # 30 gen: 8 workers, 200,000 epochs
