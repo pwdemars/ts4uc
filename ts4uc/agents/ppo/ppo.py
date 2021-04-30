@@ -29,115 +29,14 @@ DEFAULT_NUM_EPOCHS = 10
 DEFAULT_OBSERVE_FORECAST_ERRORS = False
 DEFAULT_OBSERVATION_PROCESSOR = 'LimitedHorizonProcessor'
 
-def discount_cumsum(x, discount):
-    """
-    Calculate discounted cumulative sum, from SpinningUp repo.
-    """
-    return signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
-
-class ActorBuffer: 
-    def __init__(self, sub_obs_dim, act_dim, size, gamma, min_reward, lam=0.95):
-        self.sub_obs_buf = np.zeros((size, sub_obs_dim), dtype=np.float32)
-        self.act_buf = np.zeros((size, act_dim), dtype=np.float32)
-        self.adv_buf = np.zeros(size, dtype=np.float32)
-        self.rew_buf = np.zeros(size, dtype=np.float32)
-        self.ret_buf = np.zeros(size, dtype=np.float32)
-        self.val_buf = np.zeros(size, dtype=np.float32)
-        self.logp_buf = np.zeros(size, dtype=np.float32)
-        self.gamma = gamma
-        self.lam = lam
-        self.num_used, self.ep_start_idx, self.max_size = 0, 0, size
-        
-        self.min_reward = min_reward
-        
-    def store(self, sub_obs, act, logp, rew, val):
-
-        self.num_used = min(self.num_used, self.max_size-1)
-        
-        self.sub_obs_buf[self.num_used] = sub_obs
-        self.act_buf[self.num_used] = act
-        self.logp_buf[self.num_used] = logp
-        self.rew_buf[self.num_used] = rew
-        self.val_buf[self.num_used] = val
-        
-        self.num_used +=1 
-        
-    def finish_ep(self, last_val=0):
-        path_slice = slice(self.ep_start_idx, self.num_used)
-        rews = np.append(self.rew_buf[path_slice], last_val)
-        vals = np.append(self.val_buf[path_slice], last_val)
-        
-        # the next two lines implement GAE-Lambda advantage calculation
-        deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
-        self.adv_buf[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
-        
-        self.ep_start_idx = self.num_used
-        
-    def get(self):
-        assert self.num_used == self.max_size    # buffer has to be full before you can get
-        self.num_used, self.ep_start_idx = 0, 0
-        # the next two lines implement the advantage normalization trick
-        adv_mean, adv_std = np.mean(self.adv_buf), np.std(self.adv_buf)
-        
-        self.adv_buf = (self.adv_buf - adv_mean) / adv_std
-        
-        data = dict(sub_obs=self.sub_obs_buf, act=self.act_buf,
-                    adv=self.adv_buf, logp=self.logp_buf)
-        return {k: torch.as_tensor(v, dtype=torch.float32) for k,v in data.items()}
-    
-    def is_full(self):
-        return self.num_used == self.max_size
-    
-class CriticBuffer: 
-    def __init__(self, obs_dim, size, gamma, min_reward, lam=0.95):
-        self.obs_buf = np.zeros((size, obs_dim), dtype=np.float32)
-        self.rew_buf = np.zeros(size, dtype=np.float32)
-        self.ret_buf = np.zeros(size, dtype=np.float32)
-        self.gamma = gamma
-        self.lam = lam
-        self.num_used, self.ep_start_idx, self.max_size = 0, 0, size
-        
-        self.min_reward = min_reward
-        
-    def store(self, obs, rew):
-        
-        self.num_used = min(self.num_used, self.max_size-1)
-        
-        self.obs_buf[self.num_used] = obs
-        self.rew_buf[self.num_used] = rew
-        
-        self.num_used +=1 
-        
-    def finish_ep(self, last_val=0):
-        path_slice = slice(self.ep_start_idx, self.num_used)
-        rews = np.append(self.rew_buf[path_slice], last_val)
-        
-        # the next line computes rewards-to-go, to be targets for the value function
-        self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
-        
-        self.ep_start_idx = self.num_used
-        
-    def get(self):
-        obs_buf = self.obs_buf[:self.num_used]
-        ret_buf = self.ret_buf[:self.num_used]
-        
-        self.num_used, self.ep_start_idx = 0, 0
-        
-        data = dict(obs=obs_buf, ret=ret_buf)
-        return {k: torch.as_tensor(v, dtype=torch.float32) for k,v in data.items()}
-    
-    def is_full(self):
-        return self.num_used == self.max_size
-
-
-class ACAgent(nn.Module):
+class PPOAgent(nn.Module):
     """
     Actor critic with dual input and output layers.
     
     The input dimensions are different for actor and critic. 
     """
     def __init__(self, env, **kwargs):
-        super(ACAgent, self).__init__()
+        super(PPOAgent, self).__init__()
         self.dispatch_freq_mins = env.dispatch_freq_mins
         self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs', 12) * 60 / self.dispatch_freq_mins)
         self.env = env
@@ -155,23 +54,18 @@ class ACAgent(nn.Module):
         self.num_nodes = int(kwargs.get('num_nodes'))
         self.num_layers = int(kwargs.get('num_layers'))
         self.max_demand = env.max_demand # used for normalisation
-        
-        self.buffer_size = int(kwargs.get('buffer_size'))
-        self.minibatch_size = kwargs.get('minibatch_size', None)
+    
         self.num_epochs = int(kwargs.get('num_epochs_ac', DEFAULT_NUM_EPOCHS))
         self.clip_ratio = float(kwargs.get('clip_ratio'))
         self.entropy_coef = self.entropy_coef_init = float(kwargs.get('entropy_coef'))
         self.entropy_decay_rate = float(kwargs.get('entropy_decay_rate', 1))
+        self.minibatch_size = kwargs.get('minibatch_size', None)
         
         if kwargs.get('credit_assignment_1hr') is None:
             self.gamma = DEFAULT_GAMMA
         else:
             self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
-            
-        
-        self.actor_buffer = ActorBuffer(self.n_in_ac, 1, self.buffer_size, self.gamma, env.min_reward)
-        self.critic_buffer = CriticBuffer(self.n_in_cr, self.buffer_size, self.gamma, env.min_reward)
-        
+
         self.in_ac = nn.Linear(self.n_in_ac, self.num_nodes)
         self.in_cr = nn.Linear(self.n_in_cr, self.num_nodes)
         
@@ -360,32 +254,7 @@ class ACAgent(nn.Module):
             action_dict[action_id] = a
 
         return action_dict, 0
-        
-    def compute_loss_pi(self, data):
-        """
-        Function from spinningup implementation to calcualte the PPO loss. 
-        """
-        obs, act, adv, logp_old = data['sub_obs'], data['act'], data['adv'], data['logp']
-
-        # Policy loss
-        pi = self.forward_ac(obs)
-        logp = pi.log_prob(act[:,0])
-        
-        # Useful comparison: VPG
-        # entropy = pi.entropy()
-        # entropy_coef = 0
-        # loss_pi = -(logp * (adv + entropy_coef * entropy )).mean() # useful comparison: VPG
-        
-        # PPO
-        ratio = torch.exp(logp - logp_old)
-        clip_adv = torch.clamp(ratio, 1-self.clip_ratio, 1+self.clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv)).mean() - self.entropy_coef*pi.entropy().mean()
-        
-        # compute entropy
-        entropy = pi.entropy()
-        
-        return loss_pi, entropy
-    
+                    
     def compute_loss_v(self, data):
         # TODO: make sure that the correct network (worker or global) is computing value 
         obs, ret = data['obs'], data['ret']
@@ -399,94 +268,39 @@ class ACAgent(nn.Module):
         for k in data.keys():
             batch.update({k: data[k][idx]})
         return batch
-        
-    def update(self, worker_net, pi_optimizer, v_optimizer):
+
+    def update(self, actor_buf, critic_buf, pi_optimizer, v_optimizer):
         
         
         if self.minibatch_size is not None:
-            TRAIN_PI_ITERS = int((self.num_epochs * self.buffer_size) / self.minibatch_size)
-        else:
-            TRAIN_PI_ITERS = self.num_epochs
-        
-        data = worker_net.actor_buffer.get()
-        for i in range(TRAIN_PI_ITERS):
-            if self.minibatch_size is not None:
-                minibatch = self.get_minibatch(data, self.buffer_size)
-            else:
-                minibatch=data
-
-            pi_optimizer.zero_grad()
-            loss_pi, entropy = self.compute_loss_pi(minibatch)
-            loss_pi.backward()
-            
-            for param, shared_param in zip(worker_net.parameters(),
-                                   self.parameters()):
-                if shared_param.grad is not None:
-                    break
-                shared_param._grad = param.grad
-                        
-            pi_optimizer.step()
-
-        data = worker_net.critic_buffer.get()
-        
-        if self.minibatch_size is not None:
-            max_idx = len(list(data.items())[0][1]) # Number of entries in the critic buffer
-            TRAIN_V_ITERS = int((self.num_epochs * max_idx) / self.minibatch_size)
-        else:
-            TRAIN_V_ITERS = self.num_epochs
-            
-        for i in range(TRAIN_V_ITERS):
-            
-            if self.minibatch_size is not None:
-                minibatch = self.get_minibatch(data, max_idx)
-            else:
-                minibatch=data
-
-            v_optimizer.zero_grad()
-            loss_v, explained_variance = self.compute_loss_v(minibatch)
-            loss_v.backward()
-            for param, shared_param in zip(worker_net.parameters(),
-                       self.parameters()):
-                if shared_param.grad is not None:
-                    break
-                shared_param._grad = param.grad
-            
-            v_optimizer.step()
-
-        return entropy, loss_v, explained_variance
-
-    def update_new(self, actor_buf, critic_buf, pi_optimizer, v_optimizer):
-        
-        
-        if self.minibatch_size is not None:
-            TRAIN_PI_ITERS = int((self.num_epochs * self.buffer_size) / self.minibatch_size)
+            TRAIN_PI_ITERS = int((self.num_epochs * actor_buf.num_used) / self.minibatch_size)
+            print(TRAIN_PI_ITERS)
         else:
             TRAIN_PI_ITERS = self.num_epochs
         
         data = actor_buf.get()
         for i in range(TRAIN_PI_ITERS):
             if self.minibatch_size is not None:
-                minibatch = self.get_minibatch(data, self.buffer_size)
+                minibatch = self.get_minibatch(data, actor_buf.num_used)
             else:
                 minibatch=data
 
             pi_optimizer.zero_grad()
-            loss_pi, entropy = self.compute_loss_pi_new(minibatch)
+            loss_pi, entropy = self.compute_loss_pi(minibatch)
             loss_pi.backward()
             pi_optimizer.step()
 
         data = critic_buf.get()
         
         if self.minibatch_size is not None:
-            max_idx = len(list(data.items())[0][1]) # Number of entries in the critic buffer
-            TRAIN_V_ITERS = int((self.num_epochs * max_idx) / self.minibatch_size)
+            TRAIN_V_ITERS = int((self.num_epochs * critic_buf.num_used) / self.minibatch_size)
         else:
             TRAIN_V_ITERS = self.num_epochs
             
         for i in range(TRAIN_V_ITERS):
             
             if self.minibatch_size is not None:
-                minibatch = self.get_minibatch(data, max_idx)
+                minibatch = self.get_minibatch(data, critic_buf.num_used)
             else:
                 minibatch=data
 
@@ -497,7 +311,7 @@ class ACAgent(nn.Module):
 
         return entropy, loss_v, explained_variance
 
-    def compute_loss_pi_new(self, data):
+    def compute_loss_pi(self, data):
         """
         Function from spinningup implementation to calcualte the PPO loss. 
         """
