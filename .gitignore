@@ -1,6 +1,9 @@
 results/
 .DS_Store
 
+# Emacs
+*~
+
 #Boilerplate
 
 # Byte-compiled / optimized / DLL files
