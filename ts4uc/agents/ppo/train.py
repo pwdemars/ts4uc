@@ -1,18 +1,86 @@
 import torch
 import torch.optim as optim
-import numpy as np
 import torch.multiprocessing as mp
+import numpy as np
+import time
 import scipy.signal as signal
 import copy
 from collections import namedtuple
 
 from rl4uc.environment import make_env
 from ts4uc.agents.ppo.ppo import PPOAgent
+from ts4uc import helpers
+import pandas as pd 
+import os
 
 device = "cpu"
 mp.set_start_method('spawn', True)
 
 MsgUpdateRequest = namedtuple('MsgUpdateRequest', ['agent', 'update'])
+
+class Logger:
+
+	def __init__(self, num_epochs, num_workers, steps_per_epoch):
+
+		self.num_epochs = num_epochs
+		self.steps_per_epoch = steps_per_epoch
+		self.num_workers = num_workers
+		self.reward = torch.zeros((num_epochs, num_workers)).share_memory_()
+		self.std_reward = torch.zeros((num_epochs, num_workers)).share_memory_()
+		self.q25_reward = torch.zeros((num_epochs, num_workers)).share_memory_()
+		self.q75_reward = torch.zeros((num_epochs, num_workers)).share_memory_()
+		
+		self.timesteps = torch.zeros((num_epochs, num_workers)).share_memory_()
+		self.std_timesteps = torch.zeros((num_epochs, num_workers)).share_memory_()
+		self.q25_timesteps = torch.zeros((num_epochs, num_workers)).share_memory_()
+		self.q75_timesteps = torch.zeros((num_epochs, num_workers)).share_memory_()
+
+	def log(self, reward, std_reward, q25_reward, q75_reward, 
+			timesteps, std_timesteps, q25_timesteps, q75_timesteps,
+			epoch, worker_id):
+
+		self.reward[epoch, worker_id] = reward
+		self.std_reward[epoch, worker_id] = std_reward
+		self.q25_reward[epoch, worker_id] = q25_reward
+		self.q75_reward[epoch, worker_id] = q75_reward
+
+		self.timesteps[epoch, worker_id] = timesteps
+		self.std_timesteps[epoch, worker_id] = std_timesteps
+		self.q25_timesteps[epoch, worker_id] = q25_timesteps
+		self.q75_timesteps[epoch, worker_id] = q75_timesteps
+
+
+	def save_to_csv(self, fn):
+		
+		# Training epoch and timesteps observed
+		epoch = np.arange(self.num_epochs)
+		timestep = epoch * self.steps_per_epoch
+
+		avg_reward = self.reward.numpy().mean(axis=1)
+		std_reward = self.std_reward.numpy().mean(axis=1)
+		q25_reward = self.q25_reward.numpy().mean(axis=1)
+		q75_reward = self.q75_reward.numpy().mean(axis=1)
+		
+		avg_timesteps = self.timesteps.numpy().mean(axis=1)
+		std_timesteps = self.std_timesteps.numpy().mean(axis=1)
+		q25_timesteps = self.q25_timesteps.numpy().mean(axis=1)
+		q75_timesteps = self.q75_timesteps.numpy().mean(axis=1)
+
+
+		df = pd.DataFrame({'epoch': epoch,
+						   'timestep': timestep, 
+						   'avg_reward': avg_reward,
+						   'std_reward': std_reward,
+						   'q25_reward': q25_reward,
+						   'q75_reward': q75_reward,
+						   'avg_timesteps': avg_timesteps,
+						   'std_timesteps': std_timesteps,
+						   'q25_timesteps': q25_timesteps,
+						   'q75_timesteps': q75_timesteps})
+
+		df.to_csv(fn, index=False)
+
+
 
 class SharedBuffer:
 
@@ -53,7 +121,6 @@ class SharedBuffer:
 	def get(self):
 
 		n = self.num_used
-		print("Getting data... number in buffer: {}".format(n))
 
 		obs_buf = self.obs_buf[:n]
 		act_buf = self.act_buf[:n]
@@ -66,11 +133,10 @@ class SharedBuffer:
 		adv_buf = (adv_buf - adv_mean) / adv_std
 
 		data = dict(obs=obs_buf, act=act_buf,
-                    adv=adv_buf, logp=logp_buf,
-                    ret=ret_buf)
+					adv=adv_buf, logp=logp_buf,
+					ret=ret_buf)
 
 		return {k: torch.as_tensor(v, dtype=torch.float32) for k,v in data.items()}
-
 
 def discount_cumsum(x, discount):
 	"""
@@ -83,7 +149,7 @@ class Worker(mp.Process):
 	Worker class
 	"""
 	def __init__(self, worker_id, env, pipe, policy, gamma, lam, 
-				num_epochs, steps_per_epoch, actor_buf, critic_buf):
+				num_epochs, steps_per_epoch, actor_buf, critic_buf, logger):
 
 		mp.Process.__init__(self, name=worker_id)
 
@@ -98,12 +164,24 @@ class Worker(mp.Process):
 		self.steps_per_epoch = steps_per_epoch
 		self.actor_buf = actor_buf
 		self.critic_buf = critic_buf
+		self.logger = logger
 
 	def run(self):
 
 		for epoch in range(self.num_epochs):
 
-			self.run_epoch()
+			all_ep_rewards, all_ep_timesteps = self.run_epoch()
+
+			self.logger.log(reward=np.mean(all_ep_rewards),
+							std_reward=np.std(all_ep_rewards),
+							q25_reward=np.quantile(all_ep_rewards, 0.25),
+							q75_reward=np.quantile(all_ep_rewards, 0.75),
+							timesteps=np.mean(all_ep_timesteps),
+							std_timesteps=np.std(all_ep_timesteps),
+							q25_timesteps=np.quantile(all_ep_timesteps, 0.25),
+							q75_timesteps=np.quantile(all_ep_timesteps, 0.75),
+							worker_id=int(self.worker_id),
+							epoch=epoch)
 
 			msg = MsgUpdateRequest(int(self.worker_id), True)
 			self.pipe.send(msg)
@@ -115,6 +193,7 @@ class Worker(mp.Process):
 	def run_epoch(self):
 
 		all_ep_timesteps = []
+		all_ep_rewards = []
 		sub_acts = []
 		sub_obss = []
 		obss = []
@@ -127,6 +206,7 @@ class Worker(mp.Process):
 
 			ep_timesteps = 0
 			ep_reward = 0
+			unscaled_ep_rewards = []
 			ep_rewards = []
 			ep_values = []
 
@@ -136,6 +216,8 @@ class Worker(mp.Process):
 				# Choose action with actor
 				a, sub_obs, sub_act, log_probs = self.policy.generate_action(self.env, obs)
 
+				# print(a)
+
 				# Record value from critic
 				value, obs_processed = self.policy.get_value(obs)
 				obss.append(obs_processed)
@@ -144,12 +226,14 @@ class Worker(mp.Process):
 				# Step environment 
 				new_obs, reward, done = self.env.step(a)
 
+				# Record unscaled reward
+				unscaled_ep_rewards.append(reward)
+
 				# Transform the reward
 				reward = 1+reward/-self.env.min_reward
 				reward = reward.clip(-10, 10)
 
 				# Update episode rewards and timesteps
-				ep_reward += reward
 				ep_timesteps += 1
 
 				sub_acts.append(sub_act)
@@ -157,6 +241,7 @@ class Worker(mp.Process):
 				logps.append(log_probs)
 				ep_rewards.append(reward)
 
+			all_ep_rewards.append(sum(unscaled_ep_rewards))
 			all_ep_timesteps.append(ep_timesteps)
 
 			# the next lines implement GAE-Lambda advantage calculation
@@ -172,8 +257,6 @@ class Worker(mp.Process):
 			for ret in ep_returns:
 				rets.append(ret)
 
-		print(np.mean(all_ep_timesteps))
-
 		# TODO: consider using torch.cat to remove these for loops
 		for i in range(self.steps_per_epoch):
 			for j in range(len(sub_acts[i])): 
@@ -187,7 +270,11 @@ class Worker(mp.Process):
 								  ret = rets[i])
 
 
-def train(timesteps, 
+		return all_ep_rewards, all_ep_timesteps
+
+
+def train(save_dir,
+		  timesteps, 
 		  num_workers, 
 		  steps_per_epoch, 
 		  env_params, 
@@ -205,14 +292,16 @@ def train(timesteps,
 	env = make_env(**env_params)
 	policy = PPOAgent(env, **policy_params).share_memory()
 
-	pi_optimizer = optim.Adam(policy.parameters(), lr=3e-3)
-	v_optimizer = optim.Adam(policy.parameters(), lr=3e-2)
+	pi_optimizer = optim.Adam(policy.parameters(), lr=policy_params.get('ac_learning_rate'))
+	v_optimizer = optim.Adam(policy.parameters(), lr=policy_params.get('cr_learning_rate'))
 
 	# The actor buffer will typically take more entries than the critic buffer,
 	# because it records sub-actions. Hence there is usually more than one entry
 	# per timestep. Here we set the size to be the max possible.
 	actor_buf = SharedBuffer(max_size=num_workers*steps_per_epoch*env.num_gen, obs_dim=policy.n_in_ac)
 	critic_buf = SharedBuffer(max_size=num_workers*steps_per_epoch, obs_dim=policy.n_in_cr)
+
+	logger = Logger(num_epochs, num_workers, steps_per_epoch)
 
 
 	# Worker update requests
@@ -230,6 +319,7 @@ def train(timesteps,
 						pipe=p_end,
 						actor_buf=actor_buf, 
 						critic_buf=critic_buf,
+						logger=logger,
 						num_epochs=num_epochs,
 						steps_per_epoch=worker_steps_per_epoch,
 						gamma=gamma,
@@ -237,6 +327,8 @@ def train(timesteps,
 		worker.start()
 		workers.append(worker)
 		pipes.append(p_start)
+
+	start_time = time.time()
 
 	# starting training loop
 	while epoch_counter < num_epochs:
@@ -254,47 +346,86 @@ def train(timesteps,
 
 
 						entropy, loss_v, explained_variance = policy.update(actor_buf, critic_buf, pi_optimizer, v_optimizer)
+						print("Entropy: {}".format(entropy.mean()))
 
 						epoch_counter += 1
 						update_request = [False]*num_workers
 						msg = epoch_counter
 
-						print(actor_buf.adv_buf[:actor_buf.num_used])
+						# periodically save the logs
+						if (epoch_counter + 1) % 10 == 0:
+							logger.save_to_csv(os.path.join(save_dir, 'logs.csv'))
 
 						# send to signal subprocesses to continue
 						for pipe in pipes:
 							pipe.send(msg)
 
+	time_taken = time.time() - start_time
+
+	logger.save_to_csv(os.path.join(save_dir, 'logs.csv'))
+	torch.save(policy.state_dict(), os.path.join(save_dir, 'ac_final.pt'))
+
+	# Record training time
+	with open(os.path.join(save_dir, 'time_taken.txt'), 'w') as f:
+		f.write(str(time_taken) + '\n')
+
 
 if __name__ == "__main__":
-
+	
+	import argparse
 	import json
 
-	env_params = {'num_gen': 5}
-	policy_params = {'ac_learning_rate': 3e-5,
-					 'cr_learning_rate': 3e-4,
-					 'clip_ratio': 0.1,
-					 'entropy_coef': 0.05,
-					 'minibatch_size': 50,
-					 'num_layers': 3,
-					 'num_nodes': 32,
-					 'buffer_size'
-					 'forecast_horizon_hrs': 12}
+	
+	parser = argparse.ArgumentParser(description='Train PPO agent')
+	parser.add_argument('--save_dir', type=str, required=True)
+	parser.add_argument('--workers', type=int, required=False, default=1)
+	parser.add_argument('--num_gen', type=str, required=True)
+	parser.add_argument('--timesteps', type=int, required=True)
+	parser.add_argument('--steps_per_epoch', type=int, required=True)
+
+	# The following params will be used to setup the PPO agent
+	parser.add_argument('--ac_learning_rate', type=float, required=False, default=3e-05)
+	parser.add_argument('--cr_learning_rate', type=float, required=False, default=3e-04)
+	parser.add_argument('--num_layers', type=int, required=False, default=3)
+	parser.add_argument('--num_nodes', type=int, required=False, default=32)
+	parser.add_argument('--entropy_coef', type=float, required=False, default=0.01)
+	parser.add_argument('--clip_ratio', type=float, required=False, default=0.1)
+	parser.add_argument('--forecast_horizon_hrs', type=int, required=False, default=12)
+	parser.add_argument('--credit_assignment_1hr', type=int, required=False, default=0.9)
+	parser.add_argument('--minibatch_size', type=int, required=False, default=None)
+	parser.add_argument('--update_epochs', type=int, required=False, default=4)
+	parser.add_argument('--observation_processor', type=str, required=False, default='LimitedHorizonProcessor')
 
 
-	timesteps = 1000
-	num_workers = 2
-	steps_per_epoch = 100
+	args = parser.parse_args()
 
-	assert timesteps > steps_per_epoch
+	# Make save dir
+	os.makedirs(args.save_dir, exist_ok=True)
 
-	train(timesteps=timesteps,
-		  num_workers=num_workers,
-		  steps_per_epoch=steps_per_epoch,
+	# Load policy params and save them to the local directory. 
+	policy_params = vars(args)
+	with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
+		fp.write(json.dumps(policy_params, sort_keys=True, indent=4))
+	
+	# Load the env params and save them to save_dir
+	env_params = helpers.retrieve_env_params(args.num_gen)
+	with open(os.path.join(args.save_dir, 'env_params.json'), 'w') as fp:
+		fp.write(json.dumps(env_params, sort_keys=True, indent=4))
+
+	# Calculate gamma 
+	gamma = helpers.calculate_gamma(policy_params['credit_assignment_1hr'], env_params['dispatch_freq_mins'])
+
+	# Lambda for GAE 
+	lam = 0.95
+
+	train(save_dir=args.save_dir,
+		  timesteps=args.timesteps,
+		  num_workers=args.workers,
+		  steps_per_epoch=args.steps_per_epoch,
 		  env_params=env_params,
 		  policy_params=policy_params,
-		  gamma=0.99,
-		  lam=0.95)
+		  gamma=gamma,
+		  lam=lam)
 
 
 

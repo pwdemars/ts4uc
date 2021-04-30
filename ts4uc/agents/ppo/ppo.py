@@ -15,19 +15,9 @@ import time
 import numpy as np
 import scipy.signal as signal
 
-from ts4uc.helpers import calculate_gamma
 from ts4uc.helpers import process_observation
 
 from rl4uc import processor
-
-DEFAULT_ENTROPY_COEF = 0
-DEFAULT_PPO_EPSILON = 0.2
-DEFAULT_PPO_EPOCHS = 4
-DEFAULT_GAMMA = 0.95
-DEFAULT_MINIBATCH_SIZE = 256
-DEFAULT_NUM_EPOCHS = 10
-DEFAULT_OBSERVE_FORECAST_ERRORS = False
-DEFAULT_OBSERVATION_PROCESSOR = 'LimitedHorizonProcessor'
 
 class PPOAgent(nn.Module):
     """
@@ -38,13 +28,13 @@ class PPOAgent(nn.Module):
     def __init__(self, env, **kwargs):
         super(PPOAgent, self).__init__()
         self.dispatch_freq_mins = env.dispatch_freq_mins
-        self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs', 12) * 60 / self.dispatch_freq_mins)
+        self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs') * 60 / self.dispatch_freq_mins)
         self.env = env
         
-        if kwargs.get('observation_processor', DEFAULT_OBSERVATION_PROCESSOR) == 'LimitedHorizonProcessor':
+        if kwargs.get('observation_processor') == 'LimitedHorizonProcessor':
             self.obs_processor = processor.LimitedHorizonProcessor(env, forecast_horizon=self.forecast_horizon)
-        elif kwargs.get('observation_processor', DEFAULT_OBSERVATION_PROCESSOR) == 'DayAheadProcessor':
-            self.obs_processor = processor.DayAheadProcessor(env, forecast_errors=kwargs.get('observe_forecast_errors', DEFAULT_OBSERVE_FORECAST_ERRORS))
+        elif kwargs.get('observation_processor') == 'DayAheadProcessor':
+            self.obs_processor = processor.DayAheadProcessor(env, forecast_errors=kwargs.get('observe_forecast_errors', False))
         else:
             raise ValueError(f"{kwargs.get('observation_processor')} is not a valid observation processor")
         
@@ -55,28 +45,30 @@ class PPOAgent(nn.Module):
         self.num_layers = int(kwargs.get('num_layers'))
         self.max_demand = env.max_demand # used for normalisation
     
-        self.num_epochs = int(kwargs.get('num_epochs_ac', DEFAULT_NUM_EPOCHS))
+        self.num_epochs = int(kwargs.get('update_epochs'))
         self.clip_ratio = float(kwargs.get('clip_ratio'))
         self.entropy_coef = self.entropy_coef_init = float(kwargs.get('entropy_coef'))
-        self.entropy_decay_rate = float(kwargs.get('entropy_decay_rate', 1))
-        self.minibatch_size = kwargs.get('minibatch_size', None)
+        self.minibatch_size = kwargs.get('minibatch_size')
         
-        if kwargs.get('credit_assignment_1hr') is None:
-            self.gamma = DEFAULT_GAMMA
-        else:
-            self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
-
         self.in_ac = nn.Linear(self.n_in_ac, self.num_nodes)
         self.in_cr = nn.Linear(self.n_in_cr, self.num_nodes)
         
         self.ac_layers = nn.ModuleList([nn.Linear(self.num_nodes, self.num_nodes) for i in range(self.num_layers)])
         self.cr_layers = nn.ModuleList([nn.Linear(self.num_nodes, self.num_nodes) for i in range(self.num_layers)])
+
         
         self.output_ac = nn.Linear(self.num_nodes, 2)
         self.output_cr = nn.Linear(self.num_nodes, 1)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.test_seed = kwargs.get('test_seed')
+
+        print("Entropy coef: {}".format(self.entropy_coef),
+              "Clip ratio: {}".format(self.clip_ratio),
+              "Layers: {}".format(self.num_layers),
+              "Nodes: {}".format(self.num_nodes),
+              "Minibatch size: {}".format(self.minibatch_size),
+              "Update epochs: {}".format(self.num_epochs))
 
     def get_action_scores(self, x):
         x = self.in_ac(x)
@@ -254,6 +246,29 @@ class PPOAgent(nn.Module):
             action_dict[action_id] = a
 
         return action_dict, 0
+
+    def compute_loss_pi(self, data):
+        """
+        Function from spinningup implementation to calcualte the PPO loss. 
+        """
+        obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
+
+        # Policy loss
+        pi = self.forward_ac(obs)
+        # print(act)
+        logp = pi.log_prob(act)
+        
+        # PPO
+        ratio = torch.exp(logp - logp_old)
+        clip_adv = torch.clamp(ratio, 1-self.clip_ratio, 1+self.clip_ratio) * adv
+        loss_pi = -(torch.min(ratio * adv, clip_adv)).mean() - self.entropy_coef*pi.entropy().mean()
+
+        print((torch.min(ratio * adv, clip_adv)).mean(), self.entropy_coef*pi.entropy().mean())
+        
+        # compute entropy
+        entropy = pi.entropy()
+        
+        return loss_pi, entropy
                     
     def compute_loss_v(self, data):
         # TODO: make sure that the correct network (worker or global) is computing value 
@@ -271,14 +286,14 @@ class PPOAgent(nn.Module):
 
     def update(self, actor_buf, critic_buf, pi_optimizer, v_optimizer):
         
-        
         if self.minibatch_size is not None:
             TRAIN_PI_ITERS = int((self.num_epochs * actor_buf.num_used) / self.minibatch_size)
-            print(TRAIN_PI_ITERS)
         else:
             TRAIN_PI_ITERS = self.num_epochs
         
         data = actor_buf.get()
+        print("Actor buffer num_used: {}".format(actor_buf.num_used))
+
         for i in range(TRAIN_PI_ITERS):
             if self.minibatch_size is not None:
                 minibatch = self.get_minibatch(data, actor_buf.num_used)
@@ -311,30 +326,4 @@ class PPOAgent(nn.Module):
 
         return entropy, loss_v, explained_variance
 
-    def compute_loss_pi(self, data):
-        """
-        Function from spinningup implementation to calcualte the PPO loss. 
-        """
-        obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
-
-        # Policy loss
-        pi = self.forward_ac(obs)
-        # print(act)
-        logp = pi.log_prob(act)
-        
-        # Useful comparison: VPG
-        # entropy = pi.entropy()
-        # entropy_coef = 0
-        # loss_pi = -(logp * (adv + entropy_coef * entropy )).mean() # useful comparison: VPG
-        
-        # PPO
-        ratio = torch.exp(logp - logp_old)
-        clip_adv = torch.clamp(ratio, 1-self.clip_ratio, 1+self.clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv)).mean() - self.entropy_coef*pi.entropy().mean()
-        
-        # compute entropy
-        entropy = pi.entropy()
-        
-        return loss_pi, entropy
-        
         
