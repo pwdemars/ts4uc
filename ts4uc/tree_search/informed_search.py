@@ -131,11 +131,14 @@ def weighted_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
 
 def economic_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
         fc = 0 
+        # TODO: Use rl4uc.environment to solve the dispatch (for consistency)
         for commitment, nd in zip(uc_schedule.T, net_demand):
                 disp = economic_dispatch(commitment, nd, gen_info_sorted)
-                fc += np.sum(np.multiply(np.square(disp), gen_info_sorted.a.values) + 
+                c = (np.multiply(np.square(disp), gen_info_sorted.a.values) + 
                                          np.multiply(disp, gen_info_sorted.b.values) + 
                                          gen_info_sorted.c.values) * time_interval
+                c = np.sum(commitment * c)
+                fc += c 
         return fc
 
 def economic_dispatch(commitment, net_demand, gen_info_sorted, lambda_low=0., lambda_high=100., epsilon=1.):
