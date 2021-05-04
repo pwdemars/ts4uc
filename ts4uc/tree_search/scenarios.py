@@ -25,7 +25,7 @@ def sample_errors(env, N, horizon, seeded=False):
 
     return demand_errors, wind_errors
 
-def calculate_expected_costs(env, net_demands):
+def calculate_expected_costs(env, action, net_demands):
     """
     Calculate the expected fuel costs over a set of possible 
     net demands.
@@ -36,7 +36,7 @@ def calculate_expected_costs(env, net_demands):
     """
     total = 0
     for net_demand in net_demands:
-        fuel_cost, disp = env.calculate_fuel_cost_and_dispatch(net_demand)
+        fuel_cost, disp = env.calculate_fuel_cost_and_dispatch(net_demand, action)
         lost_load_cost = env.calculate_lost_load_cost(net_demand, disp)
         total += fuel_cost + lost_load_cost
 

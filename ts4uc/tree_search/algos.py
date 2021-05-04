@@ -36,7 +36,9 @@ def uniform_cost_search(node,
         actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
             net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = expansion.get_child_node(node, action, net_demand_scenarios_t)
+            child = expansion.get_child_node(node=node, 
+                                             action=action, 
+                                             net_demand_scenarios=net_demand_scenarios_t)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost, id(child), child))
 

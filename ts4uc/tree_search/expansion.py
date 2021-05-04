@@ -64,11 +64,15 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, 
     The child node has `node` as its parent.
     """
     if action.tobytes() in node.children:
+        print("Visited Before")
         child = node.children[action.tobytes()]
         if recalc_costs == True: # If rolling horizon, then always recalculate costs
-            child.step_cost = scenarios.calculate_expected_costs(child.state, net_demand_scenarios)
+            print("recalc_costs")
+            child.step_cost = scenarios.calculate_expected_costs(child.state, action, net_demand_scenarios)
         child.path_cost = node.path_cost + child.step_cost
         return node.children[action.tobytes()]
+
+    print("New node")
 
     new_env = copy.deepcopy(node.state)
     _, reward, _ = new_env.step(action, deterministic=deterministic)
@@ -76,7 +80,7 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, 
     if net_demand_scenarios is None:
         cost = -reward
     else:
-        cost = scenarios.calculate_expected_costs(new_env, net_demand_scenarios)
+        cost = scenarios.calculate_expected_costs(new_env, action, net_demand_scenarios)
 
     child = Node(env=new_env,
                 parent=node,
