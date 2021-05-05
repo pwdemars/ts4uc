@@ -8,7 +8,7 @@ import time
 import numpy as np
 import scipy.signal as signal
 
-from ts4uc.helpers import process_observation
+from ts4uc.helpers import process_observation, calculate_gamma
 
 from rl4uc import processor
 
@@ -94,12 +94,12 @@ class SACAgent(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.test_seed = kwargs.get('test_seed')
 
-        self.gradient_steps = 2
-        self.minibatch_size = None
+        self.gradient_steps = kwargs.get('gradient_steps')
+        self.minibatch_size = kwargs.get('minibatch_size', None)
         self.ent_coef = "auto"
-        self.target_entropy = 0.2
+        self.target_entropy = kwargs.get('target_entropy')
 
-        self.optimizer = optim.Adam(self.parameters(), lr=kwargs.get('ac_learning_rate'))
+        self.pi_optimizer = optim.Adam(self.parameters(), lr=kwargs.get('ac_learning_rate'))
 
 
         # Default initial value of ent_coef when learned
@@ -111,9 +111,9 @@ class SACAgent(nn.Module):
         # Note: we optimize the log of the entropy coeff which is slightly different from the paper
         # as discussed in https://github.com/rail-berkeley/softlearning/issues/37
         self.log_ent_coef = torch.log(torch.ones(1, device=self.device) * init_value).requires_grad_(True)
-        self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr=0.001)
+        self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr=0.01)
         self.target_update_interval = 1
-        self.gamma = 0.99
+        self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
         self.tau = 0.9
 
     def get_action_scores(self, x):
@@ -132,6 +132,9 @@ class SACAgent(nn.Module):
 
 
     def obs_with_constraints(self, env, obs):
+
+        if env.episode_timestep == (env.episode_length - 1):
+            return torch.zeros(self.n_in), None
 
         x = self.obs_processor.process(obs)
  
@@ -207,7 +210,7 @@ class SACAgent(nn.Module):
         
         return action, sub_obs, sub_acts, log_probs
 
-    def update(self, buf, pi_optimizer, q_optimizer):
+    def update(self, buf):
 
         data = buf.get()
         ent_coef_losses, ent_coefs = [], []
@@ -222,6 +225,8 @@ class SACAgent(nn.Module):
 
             obs, act, rew, next_obs, dones = minibatch['obs'], minibatch['act'], minibatch['rew'], minibatch['next_obs'], minibatch['rew']
 
+            print("Mean reward: {}, std reward: {}".format(rew.mean(), rew.std()))
+
             pi = self.forward_ac(obs)
             log_prob = pi.log_prob(act)
 
@@ -229,6 +234,7 @@ class SACAgent(nn.Module):
             # so we don't change it with other losses
             # see https://github.com/rail-berkeley/softlearning/issues/60
             ent_coef = torch.exp(self.log_ent_coef.detach())
+            print("Entropy coef: ", ent_coef)
             ent_coef_loss = -(self.log_ent_coef * (log_prob + self.target_entropy).detach()).mean()
             ent_coef_losses.append(ent_coef_loss.item())
 
@@ -243,16 +249,17 @@ class SACAgent(nn.Module):
                 # Select action according to policy
                 next_pi = self.forward_ac(next_obs)
                 next_actions = next_pi.sample()
+                print("Entropy: {}".format(next_pi.entropy().mean()))
                 next_log_prob = next_pi.log_prob(next_actions)
                 # Compute the next Q values: min over all critics targets
                 next_q_values = [critic.forward(obs, act) for critic in self.critics_target]
                 next_q_values = torch.cat(next_q_values, dim=1)
-                # next_q_values = torch.cat(self.critic_target(next_obs, next_actions), dim=1)
                 next_q_values, _ = torch.min(next_q_values, dim=1, keepdim=True)
                 # add entropy term
                 next_q_values = next_q_values - ent_coef * next_log_prob.reshape(-1, 1)
                 # td error + entropy term
                 target_q_values = rew + (1 - dones) * self.gamma * next_q_values
+                print(target_q_values.mean())
 
             # Get current Q-values estimates for each critic network
             # using action from the replay buffer
@@ -276,11 +283,12 @@ class SACAgent(nn.Module):
             min_qf_pi, _ = torch.min(q_values_pi, dim=1, keepdim=True)
             actor_loss = (ent_coef * log_prob - min_qf_pi).mean()
             actor_losses.append(actor_loss.item())
+            print("Actor loss: {}".format(actor_loss))
 
             # Optimize the actor
-            pi_optimizer.zero_grad()
+            self.pi_optimizer.zero_grad()
             actor_loss.backward()
-            pi_optimizer.step()
+            self.pi_optimizer.step()
 
             # Update target networks
             if gradient_step % self.target_update_interval == 0:

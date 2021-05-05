@@ -176,6 +176,8 @@ class Worker(mp.Process):
 			all_ep_rewards.append(sum(unscaled_ep_rewards))
 			all_ep_timesteps.append(ep_timesteps)
 
+			print(ep_timesteps)
+
 
 		return all_ep_rewards, all_ep_timesteps
 
@@ -198,9 +200,6 @@ def train(save_dir,
 
 	env = make_env(**env_params)
 	policy = sac.SACAgent(env, **policy_params).share_memory()
-
-	pi_optimizer = optim.Adam(policy.parameters(), lr=policy_params.get('ac_learning_rate'))
-	q_optimizer = optim.Adam(policy.parameters(), lr=policy_params.get('cr_learning_rate'))
 
 	# The actor buffer will typically take more entries than the critic buffer,
 	# because it records sub-actions. Hence there is usually more than one entry
@@ -250,7 +249,7 @@ def train(save_dir,
 						print("Updating")
 
 
-						policy.update(buf,  pi_optimizer, q_optimizer)
+						policy.update(buf)
 
 						epoch_counter += 1
 						update_request = [False]*num_workers
@@ -292,12 +291,11 @@ if __name__ == "__main__":
 	parser.add_argument('--cr_learning_rate', type=float, required=False, default=3e-04)
 	parser.add_argument('--num_layers', type=int, required=False, default=3)
 	parser.add_argument('--num_nodes', type=int, required=False, default=32)
-	parser.add_argument('--entropy_coef', type=float, required=False, default=0.01)
-	parser.add_argument('--clip_ratio', type=float, required=False, default=0.1)
+	parser.add_argument('--target_entropy', type=float, required=False, default=0.2)
 	parser.add_argument('--forecast_horizon_hrs', type=int, required=False, default=12)
 	parser.add_argument('--credit_assignment_1hr', type=int, required=False, default=0.9)
 	parser.add_argument('--minibatch_size', type=int, required=False, default=None)
-	parser.add_argument('--update_epochs', type=int, required=False, default=4)
+	parser.add_argument('--gradient_steps', type=int, required=False, default=4)
 	parser.add_argument('--observation_processor', type=str, required=False, default='LimitedHorizonProcessor')
 
 
