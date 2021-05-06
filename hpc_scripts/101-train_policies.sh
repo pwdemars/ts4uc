@@ -3,38 +3,45 @@
 # set today's date to use as save directory
 date=$(date +"%y-%m-%d")
 
-# 5 gen: 8 workers, 25,000 epochs
-g=5
-workers=8
-epochs=25000
-hrs=4
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101/g${g} $HOME/ts4uc/data/policy_params/exp101/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs
-
 # 10 gen: 8 workers, 100,000 epochs
-g=10
+num_gen=10
 workers=8
-epochs=100000
-hrs=12
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101/g${g} $HOME/ts4uc/data/policy_params/exp101/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs
-
-# 20 gen: 8 workers, 100,000 epochs
-g=20
-workers=8
+entropy_coef=0.01
 epochs=200000
-hrs=18
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101/g${g} $HOME/ts4uc/data/policy_params/exp101/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs
+hrs=12
+save_dir=${date}_101/g${num_gen}
+qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
+     $save_dir $num_gen $workers $epochs $entropy_coef
 
-# 30 gen: 8 workers, 200,000 epochs
-g=30
+# 20 gen: 8 workers, 200,000 epochs
+num_gen=20
 workers=8
+entropy_coef=0.001
+epochs=200000
+hrs=24
+save_dir=${date}_101/g${num_gen}
+qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
+     $save_dir $num_gen $workers $epochs $entropy_coef
+
+# 30 gen: 8 workers, 300,000 epochs
+num_gen=30
+workers=8
+entropy_coef=0.001
 epochs=300000
 hrs=24
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101/g${g} $HOME/ts4uc/data/policy_params/exp101/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs
+save_dir=${date}_101/g${num_gen}
+qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
+     $save_dir $num_gen $workers $epochs $entropy_coef
 
-# 6, 7, 8, 9 gens
+# 5, 6, 7, 8, 9 gens
 workers=8
 epochs=25000
 hrs=4
-for g in 6 7 8 9;
-do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh ${date}_101/g${g} $HOME/ts4uc/data/policy_params/exp101/g${g}/params.json $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json $workers $epochs ;
-done
+save_dir=${date}_101/g${num_gen}
+entropy_coef=0.05
+for g in 5 6 7 8 9;
+do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
+	$save_dir $num_gen $workers $epochs $entropy_coef
+
+
+
