@@ -17,7 +17,7 @@ mkdir -p $HOME/Scratch/results/$save_dir
 
 cd $TMPDIR
 
-$HOME/ts4uc/ts4uc/hpc_scripts/train.sh \
+$HOME/ts4uc/hpc_scripts/train.sh \
     $save_dir $num_gen $num_epochs $workers $entropy_coef
 
 tar zcvf $HOME/Scratch/results/$save_dir/results.tar.gz $TMPDIR
