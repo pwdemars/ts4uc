@@ -148,6 +148,8 @@ def run_schedule(env, schedule, deterministic=False):
     env.reset()
     cost = 0
     ll = 0
+    demand_errors = []
+    wind_errors = []
     for action in schedule:
         action = np.where(np.array(action) > 0, 1, 0)
         obs, reward, done = env.step(action, deterministic)
@@ -161,7 +163,10 @@ def run_schedule(env, schedule, deterministic=False):
                                              env.forecast - env.wind_forecast,
                                              env.net_demand,
                                              np.dot(action, env.max_output)))
-    return cost, ll
+        demand_errors.append(env.arma_demand.xs[0])
+        wind_errors.append(env.arma_wind.xs[0])
+
+    return cost, ll, demand_errors, wind_errors
 
 
 def test_schedule(env,
@@ -169,14 +174,27 @@ def test_schedule(env,
                   seed=999,
                   num_samples=1000,
                   deterministic=False):
+
+    demand_errors = np.zeros((num_samples, env.episode_length))
+    wind_errors = np.zeros((num_samples, env.episode_length))
+
     test_costs = []
     lost_loads = []
     print("Testing schedule...")
     np.random.seed(seed)
     for i in range(num_samples):
-        cost_s, ll_s = run_schedule(env, schedule, deterministic)
+        cost_s, ll_s, demand_errors_s, wind_errors_s = run_schedule(env, schedule, deterministic)
         test_costs.append(cost_s)
         lost_loads.append(ll_s)
+
+        demand_errors[i] = demand_errors_s
+        wind_errors[i] = wind_errors_s
+
+    df = pd.DataFrame({'max_demand_errors': np.max(demand_errors, axis=0),
+                       'min_wind_errors': np.min(wind_errors, axis=0),
+                       'std_demand_errors': np.std(demand_errors, axis=0),
+                       'std_wind_errors': np.std(wind_errors, axis=0)})
+    print(df)
 
     return test_costs, lost_loads
 
@@ -293,3 +311,17 @@ def retrieve_env_params(num_gen):
 def retrieve_error_scenarios(num_gen):
     fn = Path(__file__).parent / '../data/error_scenarios/{}gen_scenarios.csv'.format(num_gen)
     return pd.read_csv(fn)
+
+def mean_std_reward(env, N=10000):
+    """
+    Get estimates for the mean and std. of the rewards, so they can be normalised
+    """
+    env.reset()
+    rewards = []
+    for i in range(N):
+        o, r, d = env.step(np.random.randint(2, size=5))
+        rewards.append(r)
+        if d: 
+            env.reset()
+    env.reset()
+    return np.mean(rewards), np.std(rewards)
