@@ -67,6 +67,23 @@ class ActorBuffer:
         self.adv_buf[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
         
         self.ep_start_idx = self.num_used
+
+    def finish_ep_new(self, ts, ep_rews, ep_vals, last_val=0):
+        path_slice = slice(self.ep_start_idx, self.num_used)
+        rews = np.append(ep_rews, last_val)
+        vals = np.append(ep_vals, last_val)
+
+        # the next two lines implement GAE-Lambda advantage calculation
+        deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
+        advs = discount_cumsum(deltas, self.gamma * self.lam)
+        advs_rep = np.repeat(advs, ts)
+        
+        # Fix to avoid the actor buffer overflowing
+        advs_rep = advs_rep[:self.num_used - self.ep_start_idx]
+
+        self.adv_buf[path_slice] = advs_rep
+        
+        self.ep_start_idx = self.num_used
         
     def get(self):
         assert self.num_used == self.max_size    # buffer has to be full before you can get
@@ -154,14 +171,14 @@ class A3CAgent(nn.Module):
         self.buffer_size = int(kwargs.get('buffer_size'))
         self.minibatch_size = kwargs.get('minibatch_size', None)
         self.num_epochs = int(kwargs.get('num_epochs_ac', DEFAULT_NUM_EPOCHS))
-        self.clip_ratio = float(kwargs.get('clip_ratio'))
         self.entropy_coef = self.entropy_coef_init = float(kwargs.get('entropy_coef'))
-        self.entropy_decay_rate = float(kwargs.get('entropy_decay_rate', 1))
         
         if kwargs.get('credit_assignment_1hr') is None:
             self.gamma = DEFAULT_GAMMA
         else:
             self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
+
+        print(self.gamma)
             
         
         self.actor_buffer = ActorBuffer(self.n_in_ac, 1, self.buffer_size, self.gamma, env.min_reward)
@@ -369,9 +386,6 @@ class A3CAgent(nn.Module):
         # Update: VPG with entropy regularisation
         entropy = pi.entropy()
         loss_pi = -(logp * (adv + self.entropy_coef * entropy )).mean() # useful comparison: VPG
-
-        # compute entropy
-        entropy = pi.entropy()
         
         return loss_pi, entropy
     

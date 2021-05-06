@@ -49,6 +49,7 @@ def run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epo
     epoch_done = False
     done = False
     ep_reward, ep_timesteps = 0, 0
+    ep_rews, ep_vals, ep_sub_acts = [], [], []
 
     rewards = []
     timesteps = []
@@ -70,6 +71,11 @@ def run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epo
 
         # Update episode rewards and timesteps survived
         ep_reward += reward
+        ep_rews.append(reward)
+        ep_vals.append(value.detach().item())
+        ep_sub_acts.append(len(sub_acts))
+
+
         ep_timesteps += 1
 
         local_ac.critic_buffer.store(obs_processed, reward)
@@ -79,7 +85,11 @@ def run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epo
         obs = new_obs
 
         if done:
-            local_ac.actor_buffer.finish_ep(last_val=0)
+            # local_ac.actor_buffer.finish_ep(last_val=0)
+            local_ac.actor_buffer.finish_ep_new(ts=ep_sub_acts, 
+                                                ep_rews=ep_rews,
+                                                ep_vals=ep_vals,
+                                                last_val=0)
             local_ac.critic_buffer.finish_ep(last_val=0)
             
             rewards.append(ep_reward)
@@ -87,10 +97,15 @@ def run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epo
 
             obs = env.reset()
             ep_reward, ep_timesteps = 0,0
+            ep_rews, ep_vals, ep_sub_acts = [], [], []
 
         if local_ac.actor_buffer.is_full():
             if not done: 
-                local_ac.actor_buffer.finish_ep(last_val=local_ac.get_value(obs)[0].detach().numpy())
+                # local_ac.actor_buffer.finish_ep(last_val=local_ac.get_value(obs)[0].detach().numpy())
+                local_ac.actor_buffer.finish_ep_new(ts=ep_sub_acts, 
+                                                    ep_rews=ep_rews,
+                                                    ep_vals=ep_vals,
+                                                    last_val=local_ac.get_value(obs)[0].detach().numpy())
                 local_ac.critic_buffer.finish_ep(last_val=local_ac.get_value(obs)[0].detach().numpy())
 
             entropy, loss_v, explained_variance = shared_ac.update(local_ac, pi_optimizer, v_optimizer)
@@ -141,8 +156,8 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, params):
         
         # Update entropy coefficient (beta)
 #         factor = (num_epochs - epoch_counter + 1).item()/num_epochs
-        factor = local_ac.entropy_decay_rate ** (epoch_counter.item())
-        local_ac.entropy_coef = local_ac.entropy_coef_init * factor
+        # factor = local_ac.entropy_decay_rate ** (epoch_counter.item())
+        # local_ac.entropy_coef = local_ac.entropy_coef_init * factor
                 
         # Run an epoch, including updating the shared network
         run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epoch_counter)
@@ -175,7 +190,6 @@ if __name__ == "__main__":
     parser.add_argument('--num_layers', type=int, required=False, default=3)
     parser.add_argument('--num_nodes', type=int, required=False, default=32)
     parser.add_argument('--entropy_coef', type=float, required=False, default=0.01)
-    parser.add_argument('--clip_ratio', type=float, required=False, default=0.1)
     parser.add_argument('--forecast_horizon_hrs', type=int, required=False, default=12)
     parser.add_argument('--credit_assignment_1hr', type=int, required=False, default=0.9)
     parser.add_argument('--minibatch_size', type=int, required=False, default=None)

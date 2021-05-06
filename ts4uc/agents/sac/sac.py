@@ -8,7 +8,7 @@ import time
 import numpy as np
 import scipy.signal as signal
 
-from ts4uc.helpers import process_observation, calculate_gamma
+from ts4uc.helpers import process_observation, calculate_gamma, mean_std_reward
 
 from rl4uc import processor
 
@@ -111,10 +111,12 @@ class SACAgent(nn.Module):
         # Note: we optimize the log of the entropy coeff which is slightly different from the paper
         # as discussed in https://github.com/rail-berkeley/softlearning/issues/37
         self.log_ent_coef = torch.log(torch.ones(1, device=self.device) * init_value).requires_grad_(True)
-        self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr=0.01)
+        self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr=kwargs.get('ent_learning_rate'))
         self.target_update_interval = 1
         self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
-        self.tau = 0.9
+        self.tau = 0.005
+
+        self.mean_reward, self.std_reward = mean_std_reward(self.env)
 
     def get_action_scores(self, x):
         x = self.in_ac(x)
@@ -212,18 +214,14 @@ class SACAgent(nn.Module):
 
     def update(self, buf):
 
-        data = buf.get()
         ent_coef_losses, ent_coefs = [], []
         actor_losses, critic_losses = [], []
 
         for gradient_step in range(self.gradient_steps):
 
-            if self.minibatch_size is not None:
-                minibatch = self.get_minibatch(data, buf.num_used)
-            else:
-                minibatch = data
+            minibatch = buf.get(minibatch_size=self.minibatch_size)
 
-            obs, act, rew, next_obs, dones = minibatch['obs'], minibatch['act'], minibatch['rew'], minibatch['next_obs'], minibatch['rew']
+            obs, act, rew, next_obs, dones = minibatch['obs'], minibatch['act'], minibatch['rew'], minibatch['next_obs'], minibatch['done']
 
             print("Mean reward: {}, std reward: {}".format(rew.mean(), rew.std()))
 
@@ -258,8 +256,9 @@ class SACAgent(nn.Module):
                 # add entropy term
                 next_q_values = next_q_values - ent_coef * next_log_prob.reshape(-1, 1)
                 # td error + entropy term
-                target_q_values = rew + (1 - dones) * self.gamma * next_q_values
-                print(target_q_values.mean())
+                # TODO: this is not correct for my problem. Sub-actions should have the same Q-values 
+                # Discounting should take this into account
+                target_q_values = rew + (1 - dones) * self.gamma * next_q_values 
 
             # Get current Q-values estimates for each critic network
             # using action from the replay buffer

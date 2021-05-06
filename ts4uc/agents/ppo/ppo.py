@@ -70,12 +70,28 @@ class PPOAgent(nn.Module):
               "Minibatch size: {}".format(self.minibatch_size),
               "Update epochs: {}".format(self.num_epochs))
 
+        self.mean_reward, self.std_reward = self.mean_std_reward()
+
+    def mean_std_reward(self, N=10000):
+        """
+        Get estimates for the mean and std. of the rewards, so they can be normalised
+        """
+        self.env.reset()
+        rewards = []
+        for i in range(N):
+            o, r, d = self.env.step(np.random.randint(2, size=5))
+            rewards.append(r)
+            if d: 
+                self.env.reset()
+        self.env.reset()
+        return np.mean(rewards), np.std(rewards)
+
     def get_action_scores(self, x):
         x = self.in_ac(x)
-        x = torch.relu(x)
+        x = F.relu(x)
         for l in self.ac_layers:
             x = l(x)
-            x = torch.relu(x)
+            x = F.relu(x)
         action_scores = self.output_ac(x)
         return action_scores
 

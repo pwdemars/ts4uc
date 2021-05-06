@@ -18,6 +18,30 @@ mp.set_start_method('spawn', True)
 
 MsgUpdateRequest = namedtuple('MsgUpdateRequest', ['agent', 'update'])
 
+class NewLogger:
+
+	def __init__(self, num_epochs, num_workers, steps_per_epoch, *args):
+
+		self.num_epochs = num_epochs
+		self.steps_per_epoch = steps_per_epoch
+		self.num_workers = num_workers
+		self.log = {}
+		for key in args:
+			self.log[key] = torch.zeros((num_epochs, num_workers)).share_memory_()
+
+	def store(self, key, value, epoch, worker_id):
+
+		self.log[key][epoch, worker_id] = value
+
+	def save_to_csv(self, fn):
+
+		df = pd.DataFrame()
+		for key in self.log:
+			df[key] = self.log[key].numpy().mean(axis=1)
+		df['epoch'] = np.arange(self.num_epochs)
+		df['timestep'] = df['epoch'] * self.steps_per_epoch
+		df.to_csv(fn, index=False)
+
 class Logger:
 
 	def __init__(self, num_epochs, num_workers, steps_per_epoch):
@@ -34,6 +58,8 @@ class Logger:
 		self.std_timesteps = torch.zeros((num_epochs, num_workers)).share_memory_()
 		self.q25_timesteps = torch.zeros((num_epochs, num_workers)).share_memory_()
 		self.q75_timesteps = torch.zeros((num_epochs, num_workers)).share_memory_()
+
+
 
 	def log(self, reward, std_reward, q25_reward, q75_reward, 
 			timesteps, std_timesteps, q25_timesteps, q75_timesteps,
@@ -172,16 +198,24 @@ class Worker(mp.Process):
 
 			all_ep_rewards, all_ep_timesteps = self.run_epoch()
 
-			self.logger.log(reward=np.mean(all_ep_rewards),
-							std_reward=np.std(all_ep_rewards),
-							q25_reward=np.quantile(all_ep_rewards, 0.25),
-							q75_reward=np.quantile(all_ep_rewards, 0.75),
-							timesteps=np.mean(all_ep_timesteps),
-							std_timesteps=np.std(all_ep_timesteps),
-							q25_timesteps=np.quantile(all_ep_timesteps, 0.25),
-							q75_timesteps=np.quantile(all_ep_timesteps, 0.75),
-							worker_id=int(self.worker_id),
-							epoch=epoch)
+			# self.logger.log(reward=np.mean(all_ep_rewards),
+			# 				std_reward=np.std(all_ep_rewards),
+			# 				q25_reward=np.quantile(all_ep_rewards, 0.25),
+			# 				q75_reward=np.quantile(all_ep_rewards, 0.75),
+			# 				timesteps=np.mean(all_ep_timesteps),
+			# 				std_timesteps=np.std(all_ep_timesteps),
+			# 				q25_timesteps=np.quantile(all_ep_timesteps, 0.25),
+			# 				q75_timesteps=np.quantile(all_ep_timesteps, 0.75),
+			# 				worker_id=int(self.worker_id),
+			# 				epoch=epoch)
+			self.logger.store('mean_reward', np.mean(all_ep_rewards), epoch, int(self.worker_id))
+			self.logger.store('std_reward', np.std(all_ep_rewards), epoch, int(self.worker_id))
+			self.logger.store('q25_reward', np.quantile(all_ep_rewards, 0.25), epoch, int(self.worker_id))
+			self.logger.store('q75_reward', np.quantile(all_ep_rewards, 0.75), epoch, int(self.worker_id))
+			self.logger.store('mean_timesteps', np.mean(all_ep_timesteps), epoch, int(self.worker_id))
+			self.logger.store('std_timesteps', np.std(all_ep_timesteps), epoch, int(self.worker_id))
+			self.logger.store('q25_timesteps', np.quantile(all_ep_timesteps, 0.25), epoch, int(self.worker_id))
+			self.logger.store('q75_timesteps', np.quantile(all_ep_timesteps, 0.75), epoch, int(self.worker_id))
 
 			msg = MsgUpdateRequest(int(self.worker_id), True)
 			self.pipe.send(msg)
@@ -230,7 +264,9 @@ class Worker(mp.Process):
 				unscaled_ep_rewards.append(reward)
 
 				# Transform the reward
-				reward = 1+reward/-self.env.min_reward
+				# reward = 1+reward/-self.env.min_reward
+				reward = (reward - self.policy.mean_reward) / self.policy.std_reward
+				# print(reward)
 				reward = reward.clip(-10, 10)
 
 				# Update episode rewards and timesteps
@@ -288,7 +324,6 @@ def train(save_dir,
 	# Number of timesteps each worker should gather per epoch
 	worker_steps_per_epoch = int(steps_per_epoch / num_workers)
 
-
 	env = make_env(**env_params)
 	policy = PPOAgent(env, **policy_params).share_memory()
 
@@ -301,7 +336,9 @@ def train(save_dir,
 	actor_buf = SharedBuffer(max_size=num_workers*steps_per_epoch*env.num_gen, obs_dim=policy.n_in_ac)
 	critic_buf = SharedBuffer(max_size=num_workers*steps_per_epoch, obs_dim=policy.n_in_cr)
 
-	logger = Logger(num_epochs, num_workers, steps_per_epoch)
+	log_keys = ('mean_reward', 'std_reward', 'q25_reward', 'q75_reward',
+			    'mean_timesteps', 'std_timesteps', 'q25_timesteps', 'q75_timesteps', 'entropy')
+	logger = NewLogger(num_epochs, num_workers, steps_per_epoch, *log_keys)
 
 
 	# Worker update requests
@@ -347,6 +384,7 @@ def train(save_dir,
 
 						entropy, loss_v, explained_variance = policy.update(actor_buf, critic_buf, pi_optimizer, v_optimizer)
 						print("Entropy: {}".format(entropy.mean()))
+						# logger.store('entropy', )
 
 						epoch_counter += 1
 						update_request = [False]*num_workers
@@ -379,7 +417,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Train PPO agent')
 	parser.add_argument('--save_dir', type=str, required=True)
 	parser.add_argument('--workers', type=int, required=False, default=1)
-	parser.add_argument('--num_gen', type=str, required=True)
+	parser.add_argument('--num_gen', type=int, required=True)
 	parser.add_argument('--timesteps', type=int, required=True)
 	parser.add_argument('--steps_per_epoch', type=int, required=True)
 
@@ -389,11 +427,10 @@ if __name__ == "__main__":
 	parser.add_argument('--num_layers', type=int, required=False, default=3)
 	parser.add_argument('--num_nodes', type=int, required=False, default=32)
 	parser.add_argument('--entropy_coef', type=float, required=False, default=0.01)
+	parser.add_argument('--update_epochs', type=float, required=False, default=4)
 	parser.add_argument('--clip_ratio', type=float, required=False, default=0.1)
 	parser.add_argument('--forecast_horizon_hrs', type=int, required=False, default=12)
 	parser.add_argument('--credit_assignment_1hr', type=int, required=False, default=0.9)
-	parser.add_argument('--minibatch_size', type=int, required=False, default=None)
-	parser.add_argument('--update_epochs', type=int, required=False, default=4)
 	parser.add_argument('--observation_processor', type=str, required=False, default='LimitedHorizonProcessor')
 
 
