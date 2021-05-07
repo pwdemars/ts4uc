@@ -39,7 +39,7 @@ epochs=25000
 hrs=4
 save_dir=${date}_101/g${num_gen}
 entropy_coef=0.05
-for g in 5 6 7 8 9;
+for num_gen in 5 6 7 8 9;
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
 	$save_dir $num_gen $workers $epochs $entropy_coef ;
 done
