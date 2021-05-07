@@ -18,7 +18,7 @@ from rl4uc.environment import make_env
 from ts4uc.tree_search import node as node_mod, expansion, informed_search
 from ts4uc.tree_search.algos import a_star
 from ts4uc import helpers
-from ts4uc.agents.ac_agent import ACAgent
+from ts4uc.agents.ppo_async.ac_agent import ACAgent
 from ts4uc.tree_search.scenarios import get_net_demand_scenarios
 
 def solve_day_ahead_anytime(env, 

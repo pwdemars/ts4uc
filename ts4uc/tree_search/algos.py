@@ -4,7 +4,6 @@
 from ts4uc.tree_search import scenarios, expansion, informed_search
 from ts4uc.tree_search import node as node_mod
 from rl4uc.environment import make_env
-from ts4uc.agents.ac_agent import ACAgent
 from ts4uc.tree_search.mcts.node import DecisionNode, DummyNode
 
 
