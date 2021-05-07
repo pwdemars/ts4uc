@@ -39,13 +39,12 @@ def calculate_expected_costs(env, action, net_demands):
         fuel_cost, disp = env.calculate_fuel_cost_and_dispatch(net_demand, action)
         lost_load_cost = env.calculate_lost_load_cost(net_demand, disp)
         if lost_load_cost > 0:
-            print("Lost load at period {}. Demand {:.2f}, disp {:.2f}".format(env.episode_timestep, net_demand, np.sum(disp)))
+            pass
+            # print("Lost load at period {}. Demand {:.2f}, disp {:.2f}".format(env.episode_timestep, net_demand, np.sum(disp)))
         total += fuel_cost + lost_load_cost
 
     exp_cost = total/net_demands.shape[0]
     exp_cost += env.start_cost
-
-    print(exp_cost)
 
     return exp_cost
 
@@ -62,5 +61,4 @@ def get_net_demand_scenarios(profile_df, env, num_scenarios):
                        'std_demand_errors': np.std(demand_errors, axis=0),
                        'std_wind_errors': np.std(wind_errors, axis=0),
                        'max_demand_scenarios': np.max(scenarios, axis=0)})
-    print(df)
     return scenarios

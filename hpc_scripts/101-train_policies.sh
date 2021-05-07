@@ -6,7 +6,7 @@ date=$(date +"%y-%m-%d")
 # 10 gen: 8 workers, 100,000 epochs
 num_gen=10
 workers=8
-entropy_coef=0.01
+entropy_coef=0.05
 epochs=200000
 hrs=12
 save_dir=${date}_101/g${num_gen}
