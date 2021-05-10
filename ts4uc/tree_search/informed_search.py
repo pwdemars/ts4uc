@@ -78,7 +78,7 @@ def simple_priority_list_ED(state, horizon):
             m = np.where(cumsum > d)[0][0] # marginal generator
             uc_schedule[t,:m+1] = 1
             
-    cost = economic_fuel_cost(uc_schedule.T, net_demand, gen_info, time_interval)
+    cost = economic_fuel_cost(state, uc_schedule.T, net_demand, gen_info, time_interval)
     
     return cost
 
@@ -129,15 +129,16 @@ def weighted_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
 
         return fuel_cost
 
-def economic_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval):
+def economic_fuel_cost(state, uc_schedule, net_demand, gen_info_sorted, time_interval):
         fc = 0 
         # TODO: Use rl4uc.environment to solve the dispatch (for consistency)
         for commitment, nd in zip(uc_schedule.T, net_demand):
-                disp = economic_dispatch(commitment, nd, gen_info_sorted)
-                c = (np.multiply(np.square(disp), gen_info_sorted.a.values) + 
-                                         np.multiply(disp, gen_info_sorted.b.values) + 
-                                         gen_info_sorted.c.values) * time_interval
-                c = np.sum(commitment * c)
+                c, d = state.calculate_fuel_cost_and_dispatch(nd, commitment)
+                # disp = economic_dispatch(commitment, nd, gen_info_sorted)
+                # c = (np.multiply(np.square(disp), gen_info_sorted.a.values) + 
+                #                          np.multiply(disp, gen_info_sorted.b.values) + 
+                #                          gen_info_sorted.c.values) * time_interval
+                # c = np.sum(commitment * c)
                 fc += c 
         return fc
 
@@ -201,7 +202,7 @@ def advanced_priority_list(state, horizon, fuel_cost_method='economic', start_co
         if fuel_cost_method=='weighted':
                 fc = weighted_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval)
         elif fuel_cost_method=='economic':
-                fc = economic_fuel_cost(uc_schedule, net_demand, gen_info_sorted, time_interval)
+                fc = economic_fuel_cost(state, uc_schedule, net_demand, gen_info_sorted, time_interval)
         else:
                 raise ValueError('{} is not a valid fuel cost calculation method'.format(fuel_cost_method))
 
