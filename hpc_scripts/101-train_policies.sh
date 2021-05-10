@@ -57,7 +57,7 @@ num_layers=3
 num_nodes=64
 for num_gen in 5 6 7 8 9;
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-	${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef ;
+	${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes ;
 done
 
 
