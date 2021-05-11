@@ -295,7 +295,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_nodes', type=int, required=False, default=32)
     parser.add_argument('--target_entropy', type=float, required=False, default=0.2)
     parser.add_argument('--forecast_horizon_hrs', type=int, required=False, default=12)
-    parser.add_argument('--credit_assignment_1hr', type=int, required=False, default=0.9)
+    parser.add_argument('--credit_assignment_1hr', type=float, required=False, default=0.9)
     parser.add_argument('--minibatch_size', type=int, required=False, default=None)
     parser.add_argument('--gradient_steps', type=int, required=False, default=4)
     parser.add_argument('--observation_processor', type=str, required=False, default='LimitedHorizonProcessor')
