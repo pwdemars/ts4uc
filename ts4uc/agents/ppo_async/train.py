@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Nov  4 17:12:08 2020
-
-@author: patrickdemars
-"""
-
-DEFAULT_SAVE_INTERVAL = 5000
-EPOCH_SAVE_INTERVAL = 1000
+EPOCH_SAVE_INTERVAL = 10000
 
 from rl4uc.environment import make_env
 import torch
