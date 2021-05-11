@@ -23,4 +23,5 @@ python $HOME/ts4uc/ts4uc/agents/ppo_async/train.py \
        --num_layers $num_layers \
        --num_nodes $num_nodes \
        --buffer_size 2000 \
+       --credit_assignment_1hr 0.8 \
        --seed 10

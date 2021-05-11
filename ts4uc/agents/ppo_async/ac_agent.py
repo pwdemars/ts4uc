@@ -184,6 +184,7 @@ class ACAgent(nn.Module):
             self.gamma = DEFAULT_GAMMA
         else:
             self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
+        print("Gamma: {}".format(self.gamma))
             
         
         self.actor_buffer = ActorBuffer(self.n_in_ac, 1, self.buffer_size, self.gamma, env.min_reward)
@@ -352,7 +353,7 @@ class ACAgent(nn.Module):
 
         # Determine actions meeting threshold
         action_freqs = counts/N_samples # frequency of actions
-        threshold_mask = action_freqs >= threshold # actions whose frequency exceeds threshold        
+        threshold_mask = action_freqs >= threshold # actions whose frequency exceeds threshold      
 
         if lower_threshold: # Lower threshold if no actions meet the threshold
             best_action_mask = action_freqs.max() == action_freqs # actions sharing most counts 
