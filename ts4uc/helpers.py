@@ -144,9 +144,10 @@ def plot_demand_realisations(env, num_samples=10):
     plt.show()
 
 
-def run_schedule(env, schedule, deterministic=False):
+def run_schedule(env, schedule, deterministic=False, co2_kg_per_USD=13.769):
     env.reset()
     cost = 0
+    co2 = 0 
     ll = 0
     demand_errors = []
     wind_errors = []
@@ -154,6 +155,7 @@ def run_schedule(env, schedule, deterministic=False):
         action = np.where(np.array(action) > 0, 1, 0)
         obs, reward, done = env.step(action, deterministic)
         cost -= reward
+        co2 += co2_kg_per_USD * (env.fuel_cost + env.start_cost)
         if env.ens:
             ll += 1
             print("ENS at period {}; "
@@ -166,7 +168,7 @@ def run_schedule(env, schedule, deterministic=False):
         demand_errors.append(env.arma_demand.xs[0])
         wind_errors.append(env.arma_wind.xs[0])
 
-    return cost, ll, demand_errors, wind_errors
+    return cost, ll, demand_errors, wind_errors, co2
 
 
 def test_schedule(env,
@@ -179,12 +181,16 @@ def test_schedule(env,
     wind_errors = np.zeros((num_samples, env.episode_length))
 
     test_costs = []
+    test_co2 = []
     lost_loads = []
     print("Testing schedule...")
     np.random.seed(seed)
     for i in range(num_samples):
-        cost_s, ll_s, demand_errors_s, wind_errors_s = run_schedule(env, schedule, deterministic)
+        cost_s, ll_s, demand_errors_s, wind_errors_s, co2 = run_schedule(env=env, 
+                                                                         schedule=schedule, 
+                                                                         deterministic=deterministic)
         test_costs.append(cost_s)
+        test_co2.append(co2)
         lost_loads.append(ll_s)
 
         demand_errors[i] = demand_errors_s
@@ -196,7 +202,7 @@ def test_schedule(env,
                        'std_wind_errors': np.std(wind_errors, axis=0)})
     print(df)
 
-    return test_costs, lost_loads
+    return test_costs, lost_loads, test_co2
 
 
 def save_results(prof_name,
@@ -207,6 +213,7 @@ def save_results(prof_name,
                  lost_loads,
                  time_taken,
                  period_time_taken=None,
+                 test_co2=None,
                  breadths=None,
                  depths=None):
     # save test costs
@@ -235,6 +242,10 @@ def save_results(prof_name,
             tree_df['breadth'] = breadths
                                
         tree_df.to_csv(os.path.join(save_dir, '{}_tree.csv'.format(prof_name)), index=False)
+
+    if test_co2 != None:
+        test_co2 = pd.DataFrame({prof_name: test_co2})
+        test_co2.to_csv(os.path.join(save_dir, '{}_co2.csv'.format(prof_name)), index=False, compression=None)
 
     # save time taken
     with open(os.path.join(save_dir, '{}_time.txt'.format(prof_name)), 'w') as f:

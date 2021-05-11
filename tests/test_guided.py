@@ -61,7 +61,7 @@ def test_uniform_cost_search():
         schedule_result = solve_returns[0]
 
         # Get distribution of costs for solution by running multiple times through environment
-        test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
+        test_costs, lost_loads, co2 = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
         mean_cost = np.mean(test_costs)
 
         assert np.isclose(mean_cost, 22608.283119377622), "Costs were: {}".format(mean_cost)
