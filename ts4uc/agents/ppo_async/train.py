@@ -64,7 +64,11 @@ def run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epo
         new_obs, reward, done = env.step(action)
 
         # Simple transformation of reward
-        reward = 1+reward/-env.min_reward
+        # reward = 1+reward/-env.min_reward
+        reward = reward / -env.min_reward
+        reward = np.log(-1/reward)
+
+        # Clip to between (-10, 10)
         reward = reward.clip(-10, 10)
 
         # Update episode rewards and timesteps survived
