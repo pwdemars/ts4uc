@@ -13,7 +13,7 @@ clip_ratio=0.1
 ac_lr=3e-05
 cr_lr=3e-04
 num_layers=3
-num_nodes=64
+num_nodes=32
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
      ${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
@@ -27,7 +27,7 @@ clip_ratio=0.1
 ac_lr=3e-05
 cr_lr=3e-04
 num_layers=3
-num_nodes=64
+num_nodes=32
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
      ${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
@@ -37,11 +37,11 @@ workers=8
 epochs=300000
 hrs=24
 entropy_coef=0.0
-clip_ratio=0.05
-ac_lr=1e-05
-cr_lr=1e-04
+clip_ratio=0.1
+ac_lr=3e-05
+cr_lr=3e-04
 num_layers=3
-num_nodes=128
+num_nodes=32
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
      ${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
@@ -54,7 +54,7 @@ clip_ratio=0.1
 ac_lr=3e-05
 cr_lr=3e-04
 num_layers=3
-num_nodes=64
+num_nodes=32
 for num_gen in 5 6 7 8 9;
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
 	${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes ;
