@@ -15,7 +15,7 @@ cr_lr=3e-04
 num_layers=2
 num_nodes=64
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/30min/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
 # 20 gen
 num_gen=20
@@ -29,7 +29,7 @@ cr_lr=3e-04
 num_layers=2
 num_nodes=64
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/30min/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
 # 30 gen
 num_gen=30
@@ -43,4 +43,4 @@ cr_lr=3e-04
 num_layers=2
 num_nodes=64
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/30min/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
