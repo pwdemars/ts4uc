@@ -5,7 +5,7 @@
 #$ -l mem=4G
 
 save_dir=$1
-num_gen=$2
+env_fn=$2
 workers=$3
 epochs=$4
 entropy_coef=$5
@@ -23,6 +23,6 @@ mkdir -p $HOME/Scratch/results/$save_dir
 cd $TMPDIR
 
 $HOME/ts4uc/hpc_scripts/train.sh \
-    $save_dir $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+    $save_dir $env_fn $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
 tar zcvf $HOME/Scratch/results/$save_dir/results.tar.gz $TMPDIR

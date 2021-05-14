@@ -1,7 +1,7 @@
 #!/bin/bash
 
 save_dir=$1
-num_gen=$2
+env_fn=$2
 workers=$3
 epochs=$4
 entropy_coef=$5
@@ -13,7 +13,7 @@ num_nodes=${10}
 
 python $HOME/ts4uc/ts4uc/agents/ppo_async/train.py \
        --save_dir $save_dir \
-       --num_gen $num_gen \
+       --env_fn $env_fn \
        --epochs $epochs \
        --workers $workers \
        --entropy_coef $entropy_coef \

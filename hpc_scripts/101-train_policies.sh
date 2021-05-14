@@ -15,7 +15,7 @@ cr_lr=3e-04
 num_layers=3
 num_nodes=32
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
 # 20 gen
 num_gen=20
@@ -29,7 +29,7 @@ cr_lr=3e-04
 num_layers=3
 num_nodes=32
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
 # 30 gen
 num_gen=30
@@ -43,7 +43,7 @@ cr_lr=3e-04
 num_layers=3
 num_nodes=32
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
 
 # 5, 6, 7, 8, 9 gens
 workers=8
@@ -57,7 +57,7 @@ num_layers=3
 num_nodes=32
 for num_gen in 5 6 7 8 9;
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-	${date}_101/g${num_gen} $num_gen $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes ;
+	${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes ;
 done
 
 
