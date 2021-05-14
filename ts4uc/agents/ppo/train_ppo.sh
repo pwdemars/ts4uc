@@ -1,5 +1,5 @@
 python $HOME/ts4uc/ts4uc/agents/ppo/train.py \
-       --save_dir results/ppo_tests/v9 \
+       --save_dir results/tmp \
        --num_gen 5 \
        --timesteps 500000 \
        --workers 4 \
