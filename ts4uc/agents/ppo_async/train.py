@@ -120,7 +120,7 @@ def run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epo
         print("---------------------------")
         save_ac(save_dir, shared_ac, epoch_counter) 
 
-def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, params):
+def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, env_params, params):
     """
     Training with a single worker. 
     
@@ -141,7 +141,7 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, params):
 
 
     np.random.seed(params.get('seed') + rank)
-    env = make_env(**params)
+    env = make_env(**env_params)
     
     local_ac = ACAgent(env, **params)
         
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train PPO agent')
     parser.add_argument('--save_dir', type=str, required=True)
     parser.add_argument('--workers', type=int, required=False, default=1)
-    parser.add_argument('--num_gen', type=int, required=True)
+    parser.add_argument('--env_fn', type=str, required=True)
     parser.add_argument('--epochs', type=int, required=True)
     parser.add_argument('--buffer_size', type=int, required=True)
     parser.add_argument('--seed', type=int, required=False, default=np.random.randint(1000000))
@@ -206,7 +206,7 @@ if __name__ == "__main__":
         fp.write(json.dumps(params, sort_keys=True, indent=4))
     
     # Load the env params and save them to save_dir
-    env_params = helpers.retrieve_env_params(args.num_gen)
+    env_params = json.load(open(args.env_fn))
     with open(os.path.join(args.save_dir, 'env_params.json'), 'w') as fp:
         fp.write(json.dumps(env_params, sort_keys=True, indent=4))
     
@@ -233,18 +233,10 @@ if __name__ == "__main__":
     shared_ac = ACAgent(env, **params)
     shared_ac.train()
     shared_ac.share_memory()
-    
-    # Save params file to save_dir 
-    with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
-        fp.write(json.dumps(params, sort_keys=True, indent=4))
-
-    # Save env params to save_dir
-    with open(os.path.join(args.save_dir, 'env_params.json'), 'w') as fp:
-        fp.write(json.dumps(env_params, sort_keys=True, indent=4))
         
     processes = []
     for rank in range(args.workers):
-        p = mp.Process(target=run_worker, args=(args.save_dir, rank, args.epochs, shared_ac, epoch_counter, params))
+        p = mp.Process(target=run_worker, args=(args.save_dir, rank, args.epochs, shared_ac, epoch_counter, env_params, params))
         p.start()
         processes.append(p)
     for p in processes:
