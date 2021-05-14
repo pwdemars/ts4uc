@@ -264,8 +264,8 @@ class Worker(mp.Process):
 				unscaled_ep_rewards.append(reward)
 
 				# Transform the reward
-				# reward = 1+reward/-self.env.min_reward
-				reward = (reward - self.policy.mean_reward) / self.policy.std_reward
+				reward = 1+reward/-self.env.min_reward
+				# reward = (reward - self.policy.mean_reward) / self.policy.std_reward
 				# print(reward)
 				reward = reward.clip(-10, 10)
 
@@ -295,7 +295,7 @@ class Worker(mp.Process):
 
 		# TODO: consider using torch.cat to remove these for loops
 		for i in range(self.steps_per_epoch):
-			for j in range(len(sub_acts[i])): 
+			for j in range(len(sub_acts[i])):
 				self.actor_buf.store(obs = sub_obss[i][j],
 									 act = sub_acts[i][j], 
 									 logp = logps[i][j],
@@ -384,7 +384,8 @@ def train(save_dir,
 
 						entropy, loss_v, explained_variance = policy.update(actor_buf, critic_buf, pi_optimizer, v_optimizer)
 						print("Entropy: {}".format(entropy.mean()))
-						# logger.store('entropy', )
+						for w in range(num_workers):
+							logger.store('entropy', entropy.mean().detach(), epoch_counter, w)
 
 						epoch_counter += 1
 						update_request = [False]*num_workers
@@ -427,7 +428,7 @@ if __name__ == "__main__":
 	parser.add_argument('--num_layers', type=int, required=False, default=3)
 	parser.add_argument('--num_nodes', type=int, required=False, default=32)
 	parser.add_argument('--entropy_coef', type=float, required=False, default=0.01)
-	parser.add_argument('--update_epochs', type=float, required=False, default=4)
+	parser.add_argument('--update_epochs', type=int, required=False, default=4)
 	parser.add_argument('--clip_ratio', type=float, required=False, default=0.1)
 	parser.add_argument('--forecast_horizon_hrs', type=int, required=False, default=12)
 	parser.add_argument('--credit_assignment_1hr', type=float, required=False, default=0.9)

@@ -70,7 +70,7 @@ class PPOAgent(nn.Module):
               "Minibatch size: {}".format(self.minibatch_size),
               "Update epochs: {}".format(self.num_epochs))
 
-        self.mean_reward, self.std_reward = self.mean_std_reward()
+        # self.mean_reward, self.std_reward = self.mean_std_reward()
 
     def mean_std_reward(self, N=10000):
         """
@@ -278,8 +278,6 @@ class PPOAgent(nn.Module):
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1-self.clip_ratio, 1+self.clip_ratio) * adv
         loss_pi = -(torch.min(ratio * adv, clip_adv)).mean() - self.entropy_coef*pi.entropy().mean()
-
-        print((torch.min(ratio * adv, clip_adv)).mean(), self.entropy_coef*pi.entropy().mean())
         
         # compute entropy
         entropy = pi.entropy()

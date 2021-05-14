@@ -116,7 +116,7 @@ class SACAgent(nn.Module):
         self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
         self.tau = 0.005
 
-        self.mean_reward, self.std_reward = mean_std_reward(self.env)
+        # self.mean_reward, self.std_reward = mean_std_reward(self.env)
 
     def get_action_scores(self, x):
         x = self.in_ac(x)

@@ -149,8 +149,8 @@ class Worker(mp.Process):
                 unscaled_ep_rewards.append(reward)
 
                 # Transform the reward
-                # reward = 1+reward/-self.env.min_reward
-                reward = (reward - self.policy.mean_reward) / self.policy.std_reward
+                reward = 1+reward/-self.env.min_reward
+                # reward = (reward - self.policy.mean_reward) / self.policy.std_reward
                 reward = reward.clip(-10, 10)
 
                 # Update episode rewards and timesteps
