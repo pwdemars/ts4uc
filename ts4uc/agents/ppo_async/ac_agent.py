@@ -199,15 +199,17 @@ class ACAgent(nn.Module):
         self.output_ac = nn.Linear(self.num_nodes, 2)
         self.output_cr = nn.Linear(self.num_nodes, 1)
 
+        self.activation = torch.tanh
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.test_seed = kwargs.get('test_seed')
 
     def get_action_scores(self, x):
         x = self.in_ac(x)
-        x = torch.relu(x)
+        x = self.activation(x)
         for l in self.ac_layers:
             x = l(x)
-            x = torch.relu(x)
+            x = self.activation(x)
         action_scores = self.output_ac(x)
         return action_scores
 
@@ -218,10 +220,10 @@ class ACAgent(nn.Module):
     
     def forward_cr(self, x):
         x = self.in_cr(x)
-        x = F.relu(x)
+        x = self.activation(x)
         for l in self.cr_layers: 
             x = l(x)
-            x = F.relu(x)
+            x = self.activation(x)
         return self.output_cr(x)
     
     def get_value(self, obs):
