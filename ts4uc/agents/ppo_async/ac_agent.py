@@ -199,7 +199,7 @@ class ACAgent(nn.Module):
         self.output_ac = nn.Linear(self.num_nodes, 2)
         self.output_cr = nn.Linear(self.num_nodes, 1)
 
-        self.activation = torch.tanh
+        self.activation = torch.relu
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.test_seed = kwargs.get('test_seed')

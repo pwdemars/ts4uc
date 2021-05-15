@@ -24,5 +24,5 @@ python $HOME/ts4uc/ts4uc/agents/ppo_async/train.py \
        --num_nodes $num_nodes \
        --buffer_size 2000 \
        --credit_assignment_1hr 0.9 \
-       --forecast_horizon_hrs 8 \
+       --forecast_horizon_hrs 12 \
        --seed 10
