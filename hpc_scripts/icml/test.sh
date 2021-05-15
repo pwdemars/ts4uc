@@ -3,7 +3,6 @@
 # set date that policies were trained. will be used for tests too 
 date=$1
 
-# Different for 30 gens! 
 for g in 10 20 30;
 	do for tree_search_func_name in a_star;
 		do for H in 2 4 ; 
