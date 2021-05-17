@@ -12,8 +12,8 @@ entropy_coef=$5
 clip_ratio=$6
 ac_lr=$7
 cr_lr=$8
-num_layers=$9
-num_nodes=${10}
+ac_arch=$9
+cr_arch=${10}
 
 module load python3/3.7
 export OMP_NUM_THREADS=1
@@ -23,6 +23,6 @@ mkdir -p $HOME/Scratch/results/$save_dir
 cd $TMPDIR
 
 $HOME/ts4uc/hpc_scripts/train.sh \
-    $save_dir $env_fn $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+    $save_dir $env_fn $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
 
 tar zcvf $HOME/Scratch/results/$save_dir/results.tar.gz $TMPDIR

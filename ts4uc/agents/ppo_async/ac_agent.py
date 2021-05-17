@@ -169,8 +169,6 @@ class ACAgent(nn.Module):
         self.n_in_ac = 2*env.num_gen + self.obs_processor.obs_size
         self.n_in_cr = self.obs_processor.obs_size
         
-        self.num_nodes = int(kwargs.get('num_nodes'))
-        self.num_layers = int(kwargs.get('num_layers'))
         self.max_demand = env.max_demand # used for normalisation
         
         self.buffer_size = int(kwargs.get('buffer_size'))
@@ -189,15 +187,18 @@ class ACAgent(nn.Module):
         
         self.actor_buffer = ActorBuffer(self.n_in_ac, 1, self.buffer_size, self.gamma, env.min_reward)
         self.critic_buffer = CriticBuffer(self.n_in_cr, self.buffer_size, self.gamma, env.min_reward)
-        
-        self.in_ac = nn.Linear(self.n_in_ac, self.num_nodes)
-        self.in_cr = nn.Linear(self.n_in_cr, self.num_nodes)
-        
-        self.ac_layers = nn.ModuleList([nn.Linear(self.num_nodes, self.num_nodes) for i in range(self.num_layers)])
-        self.cr_layers = nn.ModuleList([nn.Linear(self.num_nodes, self.num_nodes) for i in range(self.num_layers)])
-        
-        self.output_ac = nn.Linear(self.num_nodes, 2)
-        self.output_cr = nn.Linear(self.num_nodes, 1)
+
+        # Create actor
+        self.ac_arch = kwargs.get('ac_arch')
+        self.in_ac = nn.Linear(self.n_in_ac, self.ac_arch[0])
+        self.ac_layers = nn.ModuleList([nn.Linear(self.ac_arch[i], self.ac_arch[i+1]) for i in range(len(self.ac_arch)-1)])
+        self.output_ac = nn.Linear(self.ac_arch[-1], 2)
+
+        # Create critic
+        self.cr_arch = kwargs.get('cr_arch')
+        self.in_cr = nn.Linear(self.n_in_cr, self.cr_arch[0])
+        self.cr_layers = nn.ModuleList([nn.Linear(self.cr_arch[i], self.cr_arch[i+1]) for i in range(len(self.cr_arch)-1)])
+        self.output_cr = nn.Linear(self.cr_arch[-1], 1)
 
         self.activation = torch.relu
 
