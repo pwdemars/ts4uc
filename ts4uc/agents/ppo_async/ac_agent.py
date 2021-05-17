@@ -21,8 +21,6 @@ from ts4uc.helpers import process_observation
 from rl4uc import processor
 
 DEFAULT_ENTROPY_COEF = 0
-DEFAULT_PPO_EPSILON = 0.2
-DEFAULT_PPO_EPOCHS = 4
 DEFAULT_GAMMA = 0.95
 DEFAULT_MINIBATCH_SIZE = 256
 DEFAULT_NUM_EPOCHS = 10
@@ -155,6 +153,7 @@ class ACAgent(nn.Module):
     """
     def __init__(self, env, **kwargs):
         super(ACAgent, self).__init__()
+        self.__dict__.update(kwargs)
         self.dispatch_freq_mins = env.dispatch_freq_mins
         self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs', 12) * 60 / self.dispatch_freq_mins)
         self.env = env
@@ -170,32 +169,31 @@ class ACAgent(nn.Module):
         self.n_in_cr = self.obs_processor.obs_size
         
         self.max_demand = env.max_demand # used for normalisation
-        
-        self.buffer_size = int(kwargs.get('buffer_size'))
-        self.minibatch_size = kwargs.get('minibatch_size', None)
-        self.num_epochs = int(kwargs.get('num_epochs_ac', DEFAULT_NUM_EPOCHS))
-        self.clip_ratio = float(kwargs.get('clip_ratio'))
-        self.entropy_coef = self.entropy_coef_init = float(kwargs.get('entropy_coef'))
-        self.entropy_decay_rate = float(kwargs.get('entropy_decay_rate', 1))
+
+        # Allowing for backwards compatibility with old policies
+        if kwargs.get('num_nodes', None) != None:
+            self.ac_arch = [self.num_nodes] * (self.num_layers + 1) 
+            self.cr_arch = [self.num_nodes] * (self.num_layers + 1)
         
         if kwargs.get('credit_assignment_1hr') is None:
             self.gamma = DEFAULT_GAMMA
         else:
             self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
         print("Gamma: {}".format(self.gamma))
-            
+
+        attrs = vars(self)
+        for item in attrs.items():
+            print("%s: %s" % item)
         
         self.actor_buffer = ActorBuffer(self.n_in_ac, 1, self.buffer_size, self.gamma, env.min_reward)
         self.critic_buffer = CriticBuffer(self.n_in_cr, self.buffer_size, self.gamma, env.min_reward)
 
         # Create actor
-        self.ac_arch = kwargs.get('ac_arch')
         self.in_ac = nn.Linear(self.n_in_ac, self.ac_arch[0])
         self.ac_layers = nn.ModuleList([nn.Linear(self.ac_arch[i], self.ac_arch[i+1]) for i in range(len(self.ac_arch)-1)])
         self.output_ac = nn.Linear(self.ac_arch[-1], 2)
 
         # Create critic
-        self.cr_arch = kwargs.get('cr_arch')
         self.in_cr = nn.Linear(self.n_in_cr, self.cr_arch[0])
         self.cr_layers = nn.ModuleList([nn.Linear(self.cr_arch[i], self.cr_arch[i+1]) for i in range(len(self.cr_arch)-1)])
         self.output_cr = nn.Linear(self.cr_arch[-1], 1)
@@ -203,7 +201,7 @@ class ACAgent(nn.Module):
         self.activation = torch.relu
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.test_seed = kwargs.get('test_seed')
+
 
     def get_action_scores(self, x):
         x = self.in_ac(x)
@@ -425,9 +423,9 @@ class ACAgent(nn.Module):
         
         
         if self.minibatch_size is not None:
-            TRAIN_PI_ITERS = int((self.num_epochs * self.buffer_size) / self.minibatch_size)
+            TRAIN_PI_ITERS = int((self.gradient_steps * self.buffer_size) / self.minibatch_size)
         else:
-            TRAIN_PI_ITERS = self.num_epochs
+            TRAIN_PI_ITERS = self.gradient_steps
         
         data = worker_net.actor_buffer.get()
         for i in range(TRAIN_PI_ITERS):
@@ -452,9 +450,9 @@ class ACAgent(nn.Module):
         
         if self.minibatch_size is not None:
             max_idx = len(list(data.items())[0][1]) # Number of entries in the critic buffer
-            TRAIN_V_ITERS = int((self.num_epochs * max_idx) / self.minibatch_size)
+            TRAIN_V_ITERS = int((self.gradient_steps * max_idx) / self.minibatch_size)
         else:
-            TRAIN_V_ITERS = self.num_epochs
+            TRAIN_V_ITERS = self.gradient_steps
             
         for i in range(TRAIN_V_ITERS):
             

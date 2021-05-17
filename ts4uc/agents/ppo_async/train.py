@@ -151,11 +151,6 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, env_params,
         print("Epoch: {}".format(epoch_counter.item()))
         
         local_ac.load_state_dict(shared_ac.state_dict())
-        
-        # Update entropy coefficient (beta)
-#         factor = (num_epochs - epoch_counter + 1).item()/num_epochs
-        factor = local_ac.entropy_decay_rate ** (epoch_counter.item())
-        local_ac.entropy_coef = local_ac.entropy_coef_init * factor
                 
         # Run an epoch, including updating the shared network
         run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epoch_counter)
@@ -185,8 +180,8 @@ if __name__ == "__main__":
     # The following params will be used to setup the PPO agent
     parser.add_argument('--ac_learning_rate', type=float, required=False, default=3e-05)
     parser.add_argument('--cr_learning_rate', type=float, required=False, default=3e-04)
-    # parser.add_argument('--num_layers', type=int, required=False, default=3)
-    # parser.add_argument('--num_nodes', type=int, required=False, default=32)
+    # parser.add_argument('--num_layers', type=int, required=False, default=None)
+    # parser.add_argument('--num_nodes', type=int, required=False, default=None)
     parser.add_argument('--ac_arch', type=int, nargs="+", required=False, default=[32, 32, 32])
     parser.add_argument('--cr_arch', type=int, nargs="+", required=False, default=[32, 32, 32])
     parser.add_argument('--entropy_coef', type=float, required=False, default=0.01)
@@ -196,6 +191,8 @@ if __name__ == "__main__":
     parser.add_argument('--minibatch_size', type=int, required=False, default=None)
     parser.add_argument('--update_epochs', type=int, required=False, default=4)
     parser.add_argument('--observation_processor', type=str, required=False, default='LimitedHorizonProcessor')
+    parser.add_argument('--gradient_steps', type=int, required=False, default=10)
+
     
     args = parser.parse_args()
 
