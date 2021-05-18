@@ -174,6 +174,12 @@ class ACAgent(nn.Module):
         if kwargs.get('num_nodes', None) != None:
             self.ac_arch = [self.num_nodes] * (self.num_layers + 1) 
             self.cr_arch = [self.num_nodes] * (self.num_layers + 1)
+
+        else:
+            self.ac_arch = [int(v) for v in self.ac_arch.split(',')]
+            self.cr_arch = [int(v) for v in self.cr_arch.split(',')]
+
+        print(self.ac_arch, self.cr_arch)
         
         if kwargs.get('credit_assignment_1hr') is None:
             self.gamma = DEFAULT_GAMMA
