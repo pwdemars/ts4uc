@@ -7,7 +7,7 @@ save_dir_root=$HOME/Scratch/results/${date}_icml
 echo "Reading policies from and writing results to: ${save_dir_root}"
 
 for g in 10 20 30;
-	for v in {1..9}:
+	do for v in {1..9}:
 		do for tree_search_func_name in a_star;
 			do for H in 4 6; 
 				do for rho in 05;
