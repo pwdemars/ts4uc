@@ -12,8 +12,8 @@ entropy_coef=0.05
 clip_ratio=0.1
 ac_lr=3e-05
 cr_lr=3e-04
-ac_arch="32,32,32"
-cr_arch="32,32,32"
+ac_arch="100,50,25"
+cr_arch="64,64"
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
      ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
 
@@ -26,8 +26,8 @@ entropy_coef=0.001
 clip_ratio=0.1
 ac_lr=3e-05
 cr_lr=3e-04
-ac_arch="32,32,32"
-cr_arch="32,32,32"
+ac_arch="64,64"
+cr_arch="100,50,25"
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
      ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
 
@@ -40,8 +40,8 @@ entropy_coef=0.0
 clip_ratio=0.1
 ac_lr=3e-05
 cr_lr=3e-04
-ac_arch="32,32,32"
-cr_arch="32,32,32"
+ac_arch="64,64"
+cr_arch="400,300"
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
      ${date}_icml/train/g${num_gen} $HOME/ts4uc/data/envs/${num_gen}gen/carbon0.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
 
