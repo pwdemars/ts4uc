@@ -55,7 +55,7 @@ for g in 10 20 30;
     do for heuristic_method in "advanced_priority_list";
       do let secs=$t*48*3+500 && \
          time=$(date -d@$secs -u +%H:%M:%S) && \
-         qsub -l h_rt=$time ../submit_anytime_tree_search.sh ${save_dir_root}/test_anytime/g${g}/t{t}_p${rho}_${heuristic_method} \
+         qsub -l h_rt=$time ../submit_anytime_tree_search.sh ${save_dir_root}/test_anytime/g${g}/t${t}_p${rho}_${heuristic_method} \
 														 ${save_dir_root}/train/g${g}/params.json \
 														 $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json \
 														 ${save_dir_root}/train/g${g}/ac_final.pt \
