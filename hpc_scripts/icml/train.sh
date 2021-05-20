@@ -6,8 +6,8 @@ date=$(date +"%y-%m-%d")
 # 10 gen
 num_gen=10
 workers=8
-epochs=100000
-hrs=12
+epochs=200000
+hrs=24
 entropy_coef=0.05
 clip_ratio=0.1
 ac_lr=3e-05
@@ -23,8 +23,8 @@ do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
 # 20 gen
 num_gen=20
 workers=8
-epochs=300000
-hrs=24
+epochs=400000
+hrs=36
 entropy_coef=0.001
 clip_ratio=0.1
 ac_lr=3e-05
@@ -39,8 +39,8 @@ for c in 0 2;
 # 30 gen
 num_gen=30
 workers=8
-epochs=500000
-hrs=36
+epochs=600000
+hrs=48
 entropy_coef=0.0
 clip_ratio=0.1
 ac_lr=3e-05
