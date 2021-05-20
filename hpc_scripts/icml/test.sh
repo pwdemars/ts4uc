@@ -6,6 +6,7 @@ save_dir_root=$HOME/Scratch/results/${date}_icml
 
 echo "Reading policies from and writing results to: ${save_dir_root}"
 
+# A* test
 for g in 10 20 30;
 	do for tree_search_func_name in a_star;
 		do for H in 2 4 ; 
@@ -45,3 +46,24 @@ for g in 10 20 30;
 		done ;
 	done ;
 done ;
+
+## Anytime test
+rho=05
+tree_search_func_name="ida_star"
+for g in 10 20 30; 
+  do for t in 1 2 5 10 30 60;
+    do for heuristic_method in "advanced_priority_list";
+      do let secs=$t*48*3+500 && \
+         time=$(date -d@$secs -u +%H:%M:%S) && \
+         qsub -l h_rt=$time ../submit_anytime_tree_search.sh ${save_dir_root}/test_anytime/g${g}/t{t}_p${rho}_${heuristic_method} \
+														 ${save_dir_root}/train/g${g}/params.json \
+														 $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json \
+														 ${save_dir_root}/train/g${g}/ac_final.pt \
+														 ${t} \
+														 0.${rho} \
+														 ${tree_search_func_name} \
+														 $HOME/ts4uc/data/hpc_params/input_day_ahead_g${g}.txt \
+														 $heuristic_method ;
+	  done ;
+	done ;
+  done ;
