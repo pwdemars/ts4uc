@@ -12,7 +12,7 @@ for g in 10 20 30;
 		do for H in 2 4 ; 
 			do for rho in 05;
 				do for heuristic_method in "advanced_priority_list" "none";
-					do qsub -l h_rt=12:00:00 ../submit_tree_search.sh ${save_dir_root}/test/g${g}/h${H}_p${rho}_${heuristic_method} \
+					do qsub -l h_rt=2:00:00 ../submit_tree_search.sh ${save_dir_root}/test/g${g}/h${H}_p${rho}_${heuristic_method} \
 																 ${save_dir_root}/train/g${g}/params.json \
 																 ${save_dir_root}/train/g${g}/env_params.json \
 																 ${save_dir_root}/train/g${g}/ac_final.pt \
@@ -32,7 +32,7 @@ for g in 10 20 30;
 		do for H in 6 8; 
 			do for rho in 05;
 				do for heuristic_method in "advanced_priority_list";
-					do qsub -l h_rt=16:00:00 ../submit_tree_search.sh ${save_dir_root}/test/g${g}/h${H}_p${rho}_${heuristic_method} \
+					do qsub -l h_rt=8:00:00 ../submit_tree_search.sh ${save_dir_root}/test/g${g}/h${H}_p${rho}_${heuristic_method} \
 																 ${save_dir_root}/train/g${g}/params.json \
 																 ${save_dir_root}/train/g${g}/env_params.json \
 																 ${save_dir_root}/train/g${g}/ac_final.pt \
