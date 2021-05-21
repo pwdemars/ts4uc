@@ -38,10 +38,10 @@ def calculate_expected_costs(env, action, net_demands):
     for net_demand in net_demands:
         fuel_cost, disp = env.calculate_fuel_cost_and_dispatch(net_demand, action)
         lost_load_cost = env.calculate_lost_load_cost(net_demand, disp)
-        if lost_load_cost > 0:
-            pass
+        carbon_cost, _ = env._calculate_carbon_cost(disp)
+        # if lost_load_cost > 0:
             # print("Lost load at period {}. Demand {:.2f}, disp {:.2f}".format(env.episode_timestep, net_demand, np.sum(disp)))
-        total += fuel_cost + lost_load_cost
+        total += fuel_cost + lost_load_cost + carbon_cost
 
     exp_cost = total/net_demands.shape[0]
     exp_cost += env.start_cost
