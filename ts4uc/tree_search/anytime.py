@@ -58,6 +58,7 @@ def solve_day_ahead_anytime(env,
 
         final_schedule[t, :] = a_best
         env.step(a_best, deterministic=True)
+
         print(f"Period {env.episode_timestep+1}", np.array(a_best, dtype=int), round(time.time()-s, 2))
 
         root = root.children[a_best.tobytes()]
@@ -230,7 +231,7 @@ if __name__ == "__main__":
                         help='Branching threshold (for guided expansion)')
     parser.add_argument('--seed', type=int, required=False, default=np.random.randint(0,10000),
                         help='Set random seed')
-    parser.add_argument('--time_budget', type=float, required=False, default=1,
+    parser.add_argument('--time_budget', type=float, required=False, default=2,
                         help='Time budget in seconds for anytime algorithm')
     parser.add_argument('--num_scenarios', type=int, required=False, default=100,
                         help='Number of scenarios to use when calculating expected costs')
