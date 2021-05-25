@@ -269,7 +269,8 @@ def save_results(prof_name,
     test_kgco2.to_csv(os.path.join(save_dir, '{}_co2.csv'.format(prof_name)), index=False, compression=None)
 
     if results_df is not None:
-        results_df.to_csv(os.path.join(save_dir, '{}_results.csv'.format(prof_name)))
+        results_df['profile'] = prof_name
+        results_df.to_csv(os.path.join(save_dir, '{}_results.csv'.format(prof_name)), index=False)
 
     # save time taken
     with open(os.path.join(save_dir, '{}_time.txt'.format(prof_name)), 'w') as f:
