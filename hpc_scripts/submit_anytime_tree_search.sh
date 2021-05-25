@@ -14,7 +14,7 @@ time_budget=$5
 branching_threshold=$6
 tree_search_func_name=$7
 paramfile=$8
-heuristic_method=${9:-none}
+heuristic_method=$9
 
 number=$SGE_TASK_ID
 

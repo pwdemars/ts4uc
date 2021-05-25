@@ -139,7 +139,7 @@ def economic_fuel_cost(state, uc_schedule, net_demand, gen_info_sorted, time_int
                 #                          np.multiply(disp, gen_info_sorted.b.values) + 
                 #                          gen_info_sorted.c.values) * time_interval
                 # c = np.sum(commitment * c)
-                fc += c 
+                fc += np.sum(c) 
         return fc
 
 def economic_dispatch(commitment, net_demand, gen_info_sorted, lambda_low=0., lambda_high=100., epsilon=1.):
