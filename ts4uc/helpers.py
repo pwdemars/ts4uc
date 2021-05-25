@@ -146,6 +146,15 @@ def plot_demand_realisations(env, num_samples=10):
 
 def run_schedule(env, schedule, deterministic=False):
     env.reset()
+
+    results = {'total_cost': 0,
+               'fuel_cost': 0,
+               'start_cost': 0,
+               'lost_load_cost': 0,
+               'carbon_cost': 0,
+               'kgco2': 0,
+               'lost_load_events': 0}
+
     cost = 0
     kgco2 = 0 
     ll = 0
@@ -157,6 +166,7 @@ def run_schedule(env, schedule, deterministic=False):
         cost -= reward
         kgco2 += env.kgco2
         if env.ens:
+            results['lost_load_events'] += 1
             ll += 1
             print("ENS at period {}; "
                   "forecast: {:.2f}; "
@@ -168,7 +178,16 @@ def run_schedule(env, schedule, deterministic=False):
         demand_errors.append(env.arma_demand.xs[0])
         wind_errors.append(env.arma_wind.xs[0])
 
-    return cost, ll, demand_errors, wind_errors, kgco2
+        results['total_cost'] -= reward
+        results['fuel_cost'] += env.fuel_cost
+        results['start_cost'] += env.start_cost
+        results['lost_load_cost'] += env.ens_cost
+        results['carbon_cost'] += env.carbon_cost
+        results['kgco2'] += env.kgco2
+
+    return results
+
+    # return cost, ll, demand_errors, wind_errors, kgco2
 
 
 def test_schedule(env,
@@ -183,26 +202,28 @@ def test_schedule(env,
     test_costs = []
     test_kgco2 = []
     lost_loads = []
+
+    results = []
+
     print("Testing schedule...")
     np.random.seed(seed)
     for i in range(num_samples):
-        cost_s, ll_s, demand_errors_s, wind_errors_s, kgco2 = run_schedule(env=env, 
-                                                                         schedule=schedule, 
-                                                                         deterministic=deterministic)
-        test_costs.append(cost_s)
-        test_kgco2.append(kgco2)
-        lost_loads.append(ll_s)
+        # cost_s, ll_s, demand_errors_s, wind_errors_s, kgco2 = run_schedule(env=env, 
+                                                                         # schedule=schedule, 
+                                                                         # deterministic=deterministic)
+        # test_costs.append(cost_s)
+        # test_kgco2.append(kgco2)
+        # lost_loads.append(ll_s)
 
-        demand_errors[i] = demand_errors_s
-        wind_errors[i] = wind_errors_s
+        # demand_errors[i] = demand_errors_s
+        # wind_errors[i] = wind_errors_s
 
-    df = pd.DataFrame({'max_demand_errors': np.max(demand_errors, axis=0),
-                       'min_wind_errors': np.min(wind_errors, axis=0),
-                       'std_demand_errors': np.std(demand_errors, axis=0),
-                       'std_wind_errors': np.std(wind_errors, axis=0)})
-    print(df)
+        results_s = run_schedule(env=env, schedule=schedule, deterministic=deterministic)
+        results.append(results_s)
 
-    return test_costs, lost_loads, test_kgco2
+    return pd.DataFrame(results)
+
+    # return test_costs, lost_loads, test_kgco2
 
 
 def save_results(prof_name,
@@ -212,8 +233,9 @@ def save_results(prof_name,
                  test_costs,
                  lost_loads,
                  time_taken,
+                 test_kgco2,
+                 results_df=None,
                  period_time_taken=None,
-                 test_kgco2=None,
                  breadths=None,
                  depths=None):
     # save test costs
@@ -243,9 +265,11 @@ def save_results(prof_name,
                                
         tree_df.to_csv(os.path.join(save_dir, '{}_tree.csv'.format(prof_name)), index=False)
 
-    if test_kgco2 != None:
-        test_kgco2 = pd.DataFrame({prof_name: test_kgco2})
-        test_kgco2.to_csv(os.path.join(save_dir, '{}_co2.csv'.format(prof_name)), index=False, compression=None)
+    test_kgco2 = pd.DataFrame({prof_name: test_kgco2})
+    test_kgco2.to_csv(os.path.join(save_dir, '{}_co2.csv'.format(prof_name)), index=False, compression=None)
+
+    if results_df is not None:
+        results_df.to_csv(os.path.join(save_dir, '{}_results.csv'.format(prof_name)))
 
     # save time taken
     with open(os.path.join(save_dir, '{}_time.txt'.format(prof_name)), 'w') as f:
