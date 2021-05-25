@@ -237,7 +237,7 @@ if __name__ == "__main__":
                         help='Number of scenarios to use when calculating expected costs')
     parser.add_argument('--tree_search_func_name', type=str, required=False, default='ida_star',
                         help='Tree search algorithm to use')
-    parser.add_argument('--heuristic_method', type=str, required=False, default='none',
+    parser.add_argument('--heuristic_method', type=str, required=False, default='advanced_priority_list',
                         help='Heuristic method to use (when using A* or its variants)')
 
     args = parser.parse_args()
