@@ -151,7 +151,6 @@ def run_schedule(env, schedule, deterministic=False):
                'fuel_cost': 0,
                'start_cost': 0,
                'lost_load_cost': 0,
-               'carbon_cost': 0,
                'kgco2': 0,
                'lost_load_events': 0}
 
@@ -182,7 +181,6 @@ def run_schedule(env, schedule, deterministic=False):
         results['fuel_cost'] += env.fuel_cost
         results['start_cost'] += env.start_cost
         results['lost_load_cost'] += env.ens_cost
-        results['carbon_cost'] += env.carbon_cost
         results['kgco2'] += env.kgco2
 
     return results
