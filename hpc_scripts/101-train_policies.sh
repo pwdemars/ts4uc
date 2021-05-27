@@ -15,7 +15,7 @@ cr_lr=3e-04
 ac_arch="100,50,25"
 cr_arch="64,64"
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
 
 # 20 gen
 num_gen=20
@@ -29,7 +29,7 @@ cr_lr=3e-04
 ac_arch="64,64"
 cr_arch="100,50,25"
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
 
 # 30 gen
 num_gen=30
@@ -43,7 +43,7 @@ cr_lr=3e-04
 ac_arch="64,64"
 cr_arch="400,300"
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes
+     ${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
 
 # 5, 6, 7, 8, 9 gens
 workers=8
@@ -57,7 +57,7 @@ ac_arch="64,64"
 cr_arch="64,64"
 for num_gen in 5 6 7 8 9;
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-	${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $num_layers $num_nodes ;
+	${date}_101/g${num_gen} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ;
 done
 
 
