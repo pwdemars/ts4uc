@@ -58,13 +58,13 @@ def a_star(node,
         return node_mod.get_solution(node)
 
     frontier = []
-    heapq.heappush(frontier, (0, node))
+    heapq.heappush(frontier, (0, id(node), node))
 
     # frontier = queue.PriorityQueue()
     # frontier.put((0, id(node), node)) # include the object id in the priority queue. prevents type error when path_costs are identical.
     while True:
         # node = frontier.get()[2]
-        node = heapq.heappop(frontier)[1]
+        node = heapq.heappop(frontier)[2]
         if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
             return node_mod.get_solution(node)
         actions = expansion.get_actions(node, **policy_kwargs)
@@ -74,7 +74,7 @@ def a_star(node,
             child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep, heuristic_method)
             node.children[action.tobytes()] = child
             # frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
-            heapq.heappush(frontier, (child.path_cost + child.heuristic_cost, child))
+            heapq.heappush(frontier, (child.path_cost + child.heuristic_cost, id(child), child))
 
             # Early stopping if root has one child
             if early_stopping and node.parent is None and len(actions) == 1:
