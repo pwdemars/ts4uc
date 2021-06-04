@@ -5,7 +5,7 @@ from rl4uc.environment import make_env
 
 from ts4uc import helpers
 
-from ts4uc.agents.ac_agent import ACAgent
+from ts4uc.agents.ppo_async.ac_agent import ACAgent
 
 import numpy as np
 import argparse 
@@ -94,20 +94,32 @@ if __name__ == "__main__":
         schedule_result = solve_model_free_day_ahead(env, policy)
         time_taken = time.time() - s
 
-        # Get distribution of costs for solution by running multiple times through environment
+        # # Get distribution of costs for solution by running multiple times through environment
+        # TEST_SAMPLE_SEED=999
+        # test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
+        # helpers.save_results(prof_name=prof_name, 
+        #                      save_dir=args.save_dir, 
+        #                      num_gen=env.num_gen, 
+        #                      schedule=schedule_result,
+        #                      test_costs=test_costs, 
+        #                      lost_loads=lost_loads,
+        #                      time_taken=time_taken)
+
         TEST_SAMPLE_SEED=999
-        test_costs, lost_loads = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
+        results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
         helpers.save_results(prof_name=prof_name, 
                              save_dir=args.save_dir, 
                              num_gen=env.num_gen, 
                              schedule=schedule_result,
-                             test_costs=test_costs, 
-                             lost_loads=lost_loads,
+                             test_costs=results['total_cost'], 
+                             test_kgco2=results['kgco2'],
+                             lost_loads=results['lost_load_events'],
+                             results_df=results,
                              time_taken=time_taken)
 
         print("Done")
         print()
-        print("Mean costs: ${:.2f}".format(np.mean(test_costs)))
-        print("Lost load prob: {:.3f}%".format(100*np.sum(lost_loads)/(args.num_samples * env.episode_length)))
+        print("Mean costs: ${:.2f}".format(np.mean(results['total_cost'])))
+        print("Lost load prob: {:.3f}%".format(100*np.sum(results['lost_load_events'])/(args.num_samples * env.episode_length)))
         print("Time taken: {:.2f}s".format(time_taken))
-        print()	
+        print() 

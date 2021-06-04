@@ -76,8 +76,6 @@ def ida_star(root,
              recalc_costs=False,
              **policy_kwargs):
 
-    start_time = time.time()
-
     class TimeoutException(Exception):   # Custom exception class
         pass
 
@@ -87,10 +85,22 @@ def ida_star(root,
     # Change the behavior of SIGALRM
     signal.signal(signal.SIGALRM, timeout_handler)
 
-    horizon = 0
+    horizon = 1
     best_path = []
-    while (time.time() - start_time) < time_budget:
-        time_remaining = time_budget - (time.time() - start_time)
+
+
+    start_time = time.time()
+    # Always run to at least H=1
+    best_path, _ = a_star(root,
+                      root.state.episode_timestep+horizon,
+                      net_demand_scenarios,
+                      heuristic_method,
+                      early_stopping=False,
+                      recalc_costs=recalc_costs,
+                      **policy_kwargs)
+
+    while True:
+        time_remaining = max(0.01, time_budget - (time.time() - start_time))
         signal.setitimer(signal.ITIMER_REAL, time_remaining)
 
         horizon += 1

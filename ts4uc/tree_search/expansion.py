@@ -11,13 +11,12 @@ from ts4uc.tree_search.node import Node
 def get_actions(node, policy, **policy_kwargs):
     """Wrapper function for get actions with policy (guided search) or without (unguided)"""
     env = node.state
-    if node.is_expanded: 
+    if node.is_expanded:
         actions = [child.action for child in list(node.children.values())]
     elif policy != None:
         actions = get_actions_with_policy(env, policy, **policy_kwargs)
     else:
         actions = get_all_actions(env)
-    node.is_expanded = True
     return actions
 
 def get_all_actions(env):
