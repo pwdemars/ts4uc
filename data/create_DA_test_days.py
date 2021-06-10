@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
 	TEST_DATA_FN = pkg_resources.resource_stream('rl4uc', 'data/test_data_10gen.csv')	
 	NUM_DAYS = 20
-	NUM_GENS = [5, 6, 7, 8, 9, 10, 20, 30]
+	NUM_GENS = [5, 6, 7, 8, 9, 10, 20, 30, 50, 100]
 	DISPATCH_FREQS = [30]
 
 	all_df = pd.read_csv(TEST_DATA_FN)
