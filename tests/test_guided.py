@@ -64,4 +64,4 @@ def test_uniform_cost_search():
         results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
         mean_cost = np.mean(results['total_cost'])
 
-        assert np.isclose(mean_cost, 22608.283119377622), "Costs were: {}".format(mean_cost)
+        assert np.isclose(mean_cost, 22589.375007064824), "Costs were: {}".format(mean_cost)

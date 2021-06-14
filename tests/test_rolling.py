@@ -20,4 +20,4 @@ def test_rolling():
                                                     policy=None)
     cost = returns[1]
 
-    assert np.isclose(cost, 22178.303084543917), "Costs were {}".format(cost)
+    assert np.isclose(cost, 22596.131562688606), "Costs were {}".format(cost)

@@ -62,5 +62,5 @@ def test_ida_star():
     results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
     mean_cost = np.mean(results['total_cost'])
 
-    assert np.isclose(mean_cost, 14419.559364953846), "Costs were: {}".format(mean_cost)
+    assert np.isclose(mean_cost, 14557.639280326555), "Costs were: {}".format(mean_cost)
 
