@@ -8,7 +8,7 @@ rho=05
 tree_search_func_name="ida_star"
 for g in 10 20 30; 
   do for t in 1 2 5 10 30 60;
-    do for heuristic_method in "advanced_priority_list" "none";
+    do for heuristic_method in "simple_priority_list" "simple_priority_list_ED" "advanced_priority_list" "none";
       do let secs=$t*48*3+500 && \
          time=$(date -d@$secs -u +%H:%M:%S) && \
          qsub -l h_rt=$time submit_anytime_tree_search.sh $HOME/Scratch/results/${date}_202/guided_${tree_search_func_name}/g${g}/g${g}_t${t}_p${rho}_${heuristic_method} \
