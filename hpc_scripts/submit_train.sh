@@ -14,6 +14,7 @@ ac_lr=$7
 cr_lr=$8
 ac_arch=$9
 cr_arch=${10}
+buffer_size=${11:-2000}
 
 module load python3/3.7
 export OMP_NUM_THREADS=1
