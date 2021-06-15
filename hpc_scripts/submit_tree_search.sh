@@ -37,5 +37,5 @@ python $HOME/ts4uc/ts4uc/tree_search/day_ahead.py --save_dir $save_dir \
 												  --num_scenarios 100 \
 												  --tree_search_func_name $tree_search_func_name \
 												  --heuristic_method $heuristic_method \
-												  --seed 2
+												  --seed 1
 
