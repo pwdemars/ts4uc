@@ -8,7 +8,7 @@ do python $HOME/pglib-uc/solve_and_test.py --save_dir ../results/${date}_106/mil
 						 --env_params_fn $HOME/ts4uc/data/day_ahead/${g}gen/30min/env_params.json \
 						 --test_data_dir $HOME/ts4uc/data/day_ahead/${g}gen/30min \
 						 --num_samples 1000 \
-						 --perfect_forecast true ;
+						 --perfect_forecast ;
 done 					
 
 for g in 10 20 30 ;
