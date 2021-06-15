@@ -206,16 +206,6 @@ def test_schedule(env,
     print("Testing schedule...")
     np.random.seed(seed)
     for i in range(num_samples):
-        # cost_s, ll_s, demand_errors_s, wind_errors_s, kgco2 = run_schedule(env=env, 
-                                                                         # schedule=schedule, 
-                                                                         # deterministic=deterministic)
-        # test_costs.append(cost_s)
-        # test_kgco2.append(kgco2)
-        # lost_loads.append(ll_s)
-
-        # demand_errors[i] = demand_errors_s
-        # wind_errors[i] = wind_errors_s
-
         results_s = run_schedule(env=env, schedule=schedule, deterministic=deterministic)
         results.append(results_s)
 
