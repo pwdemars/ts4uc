@@ -24,6 +24,6 @@ mkdir -p $HOME/Scratch/results/$save_dir
 cd $TMPDIR
 
 $HOME/ts4uc/hpc_scripts/train.sh \
-    $save_dir $env_fn $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch
+    $save_dir $env_fn $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size
 
 tar zcvf $HOME/Scratch/results/$save_dir/results.tar.gz $TMPDIR
