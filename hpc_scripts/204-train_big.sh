@@ -18,7 +18,8 @@ epochs=300000
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
      ${date}_204/g${num_gen}_v1 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size
 
-buffer_size=10000
-epochs=150000
+ac_lr=3e-05
+cr_lr=3e-04
+epochs=300000
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
      ${date}_204/g${num_gen}_v2 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size
