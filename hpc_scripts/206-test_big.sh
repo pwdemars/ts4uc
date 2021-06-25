@@ -8,7 +8,7 @@ rho=02
 epoch=270000
 tree_search_func_name="ida_star"
 for g in 100; 
-  do for t in 1 2 5 10 30 60;
+  do for t in 60;
     do for heuristic_method in "advanced_priority_list";
       do let secs=$t*48*3+500 && \
          time=$(date -d@$secs -u +%H:%M:%S) && \
