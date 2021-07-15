@@ -152,7 +152,8 @@ def run_schedule(env, schedule, deterministic=False):
                'start_cost': 0,
                'lost_load_cost': 0,
                'kgco2': 0,
-               'lost_load_events': 0}
+               'lost_load_events': 0,
+               'net_demand_mwh': 0}
 
     cost = 0
     kgco2 = 0 
@@ -182,6 +183,7 @@ def run_schedule(env, schedule, deterministic=False):
         results['start_cost'] += env.start_cost
         results['lost_load_cost'] += env.ens_cost
         results['kgco2'] += env.kgco2
+        results['net_demand_mwh'] += env.net_demand * env.dispatch_resolution
 
     return results
 
@@ -258,6 +260,7 @@ def save_results(prof_name,
 
     if results_df is not None:
         results_df['profile'] = prof_name
+        results_df['usd_per_mwh'] = results_df.total_cost / results_df.net_demand_mwh
         results_df.to_csv(os.path.join(save_dir, '{}_results.csv'.format(prof_name)), index=False)
 
     # save time taken
