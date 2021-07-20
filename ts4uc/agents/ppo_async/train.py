@@ -180,8 +180,6 @@ if __name__ == "__main__":
     # The following params will be used to setup the PPO agent
     parser.add_argument('--ac_learning_rate', type=float, required=False, default=3e-05)
     parser.add_argument('--cr_learning_rate', type=float, required=False, default=3e-04)
-    # parser.add_argument('--num_layers', type=int, required=False, default=None)
-    # parser.add_argument('--num_nodes', type=int, required=False, default=None)
     parser.add_argument('--ac_arch', type=str, required=False, default="32,32,32")
     parser.add_argument('--cr_arch', type=str, required=False, default="32,32,32")
     parser.add_argument('--entropy_coef', type=float, required=False, default=0.01)
@@ -193,6 +191,9 @@ if __name__ == "__main__":
     parser.add_argument('--observation_processor', type=str, required=False, default='LimitedHorizonProcessor')
     parser.add_argument('--gradient_steps', type=int, required=False, default=10)
 
+    # Alternatively, pass a filename for trained weights and parameters, used to set network architectures.
+    parser.add_argument('--ac_weights_fn', type=str, required=False, default=None)
+    parser.add_argument('--ac_params_fn', type=str, required=False, default=None)
     
     args = parser.parse_args()
 
@@ -203,6 +204,11 @@ if __name__ == "__main__":
     params = vars(args)
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
         fp.write(json.dumps(params, sort_keys=True, indent=4))
+
+    # If training using a pre-defined AC network (e.g. for transfer learning) overwrite archs
+    if args.ac_params_fn is not None:
+        ac_params = json.load(open(args.ac_params_fn))
+        params.update({'ac_arch': ac_params['ac_arch'], 'cr_arch': ac_params['cr_arch']})
     
     # Load the env params and save them to save_dir
     env_params = json.load(open(args.env_fn))
@@ -230,8 +236,14 @@ if __name__ == "__main__":
     # initialise environment and the shared networks 
     env = make_env(**env_params)
     shared_ac = ACAgent(env, **params)
+
+    if args.ac_weights_fn is not None:
+        print("********************Using pre-trained AC weights***********************")
+        shared_ac.load_state_dict(torch.load(args.ac_weights_fn))
+
     shared_ac.train()
     shared_ac.share_memory()
+
         
     processes = []
     for rank in range(args.workers):

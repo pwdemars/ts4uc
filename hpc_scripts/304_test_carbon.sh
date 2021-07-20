@@ -21,4 +21,4 @@ for g in 10 20 30;
 														 $heuristic_method ;
 	  done ;
 	done ;
-  done ;
+done ;
