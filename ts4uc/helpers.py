@@ -171,10 +171,12 @@ def run_schedule(env, schedule, deterministic=False):
             print("ENS at period {}; "
                   "forecast: {:.2f}; "
                   "real: {:.2f}; "
-                  "committed: {:.2f}".format(env.episode_timestep,
+                  "committed: {:.2f}; "
+                  "tried to commit: {:.2f}".format(env.episode_timestep,
                                              env.forecast - env.wind_forecast,
                                              env.net_demand,
-                                             np.dot(action * env.availability, env.max_output)))
+                                             np.dot(action * env.availability, env.max_output),
+                                             np.dot(action, env.max_output)))
         demand_errors.append(env.arma_demand.xs[0])
         wind_errors.append(env.arma_wind.xs[0])
 
