@@ -72,15 +72,24 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, 
     new_env = copy.deepcopy(node.state)
     _, reward, _ = new_env.step(action, deterministic=deterministic)
 
+    # If modelling outages, sample possible generator availabilities for this node
+    if new_env.outages:
+        availability_scenarios = scenarios.sample_availability_single(new_env, action, node.availability_scenarios)
+    else:
+        availability_scenarios = None
+
+
     if net_demand_scenarios is None:
         cost = -reward
     else:
-        cost = scenarios.calculate_expected_costs(new_env, action, net_demand_scenarios)
+        cost = scenarios.calculate_expected_costs(new_env, action, net_demand_scenarios, availability_scenarios)
 
     child = Node(env=new_env,
                 parent=node,
                 action=action,
                 step_cost=cost, 
                 path_cost=node.path_cost + cost)
+
+    child.availability_scenarios = availability_scenarios
     
     return child

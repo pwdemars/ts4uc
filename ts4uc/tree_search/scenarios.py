@@ -25,7 +25,7 @@ def sample_errors(env, N, horizon, seeded=False):
 
     return demand_errors, wind_errors
 
-def calculate_expected_costs(env, action, net_demands):
+def calculate_expected_costs(env, action, net_demands, availability_scenarios=None):
     """
     Calculate the expected fuel costs over a set of possible 
     net demands.
@@ -35,8 +35,22 @@ def calculate_expected_costs(env, action, net_demands):
     cost (which is invariant with the net demand).
     """
     total = 0
-    for net_demand in net_demands:
-        fuel_costs, disp = env.calculate_fuel_cost_and_dispatch(net_demand, action)
+
+    if availability_scenarios is None:
+        availability_scenarios = np.ones(shape=(net_demands.size, env.num_gen))
+
+    for net_demand, availability in zip(net_demands, availability_scenarios):
+
+        # if env.outages:
+        #     outage = env._sample_outage()
+        #     availability = env.availability - outage
+        #     availability = np.clip(availability, 0, 1)
+        #     if np.any(outage): 
+        #         print(outage)
+        # else:
+        #     availability = None
+
+        fuel_costs, disp = env.calculate_fuel_cost_and_dispatch(net_demand, action, availability)
         fuel_cost = np.sum(fuel_costs)
         lost_load_cost = env.calculate_lost_load_cost(net_demand, disp)
         # if lost_load_cost > 0:
@@ -62,3 +76,44 @@ def get_net_demand_scenarios(profile_df, env, num_scenarios):
                        'std_wind_errors': np.std(wind_errors, axis=0),
                        'max_demand_scenarios': np.max(scenarios, axis=0)})
     return scenarios
+
+def sample_availability_multiple(env, schedule, initial_availability):
+    """
+    Sample possible realisations of generator availability over multiple time periods
+    """
+    time_periods = schedule.shape[0]
+    num_scenarios = initial_availability.shape[0]
+    availability = np.zeros(shape=(num_scenarios, time_periods, env.num_gen))
+    for i, avail in enumerate(initial_availability):
+        env.availability = avail
+        for t in range(time_periods):
+            env.commitment = schedule[t]
+            outage = env._sample_outage()
+            env._update_availability(outage)
+            availability[i,t] = env.availability
+
+    return availability
+
+def sample_availability_single(env, action, initial_availability):
+    """
+    Sample possible realisations of generator availability for a single timesteps
+
+    In order to sample availability correctly, we have to set initial 'seed' availabilities. 
+    This function returns a new set of availabilities, with dimensions (n_scenarios, num_gen)
+    """
+    original_availability = np.copy(env.availability)
+    original_commitment = np.copy(env.commitment)
+    
+    num_scenarios = initial_availability.shape[0]
+    availabilities = np.zeros(shape=(num_scenarios, env.num_gen))
+    
+    env.commitment = action
+    for i, avail in enumerate(initial_availability):
+        outage = env._sample_outage()
+        new_availability = np.clip(avail - outage, 0, 1)
+        availabilities[i] = new_availability
+        
+    env.availability = original_availability
+    env.commitment = original_commitment
+
+    return availabilities
