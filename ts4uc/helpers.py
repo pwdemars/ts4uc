@@ -190,6 +190,7 @@ def test_schedule(env,
     np.random.seed(seed)
     for i in range(num_samples):
         results_s = run_schedule(env=env, schedule=schedule, deterministic=deterministic)
+        results.append(results_s)
 
     return pd.DataFrame(results)
 
