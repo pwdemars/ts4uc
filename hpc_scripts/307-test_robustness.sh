@@ -14,7 +14,7 @@ for g in 10 20 30;
      time=$(date -d@$secs -u +%H:%M:%S) && \
      qsub -l h_rt=$time submit_anytime_tree_search.sh $HOME/Scratch/results/${date}_307/guided_${tree_search_func_name}/g${g} \
 												 $HOME/AISO_HPC/best_policies/robustness/g${g}/params.json \
-												 $HOME/ts4uc/data/envs/robustenss/${g}gen.json \
+												 $HOME/ts4uc/data/envs/robustness/${g}gen.json \
 												 $HOME/AISO_HPC/best_policies/robustness/g${g}/ac_final.pt \
 												 ${t} \
 												 0.${rho} \

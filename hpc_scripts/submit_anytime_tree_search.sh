@@ -15,7 +15,7 @@ branching_threshold=$6
 tree_search_func_name=$7
 paramfile=$8
 heuristic_method=$9
-seed=${10:-1"}
+seed=${10:-1}
 
 number=$SGE_TASK_ID
 
