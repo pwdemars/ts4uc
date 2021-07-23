@@ -4,7 +4,7 @@
 date=$(date +"%y-%m-%d")
 
 #
-rho=02
+rho=05
 epoch="final"
 tree_search_func_name="ida_star"
 t=60
