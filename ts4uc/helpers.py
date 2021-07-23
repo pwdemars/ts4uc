@@ -155,19 +155,11 @@ def run_schedule(env, schedule, deterministic=False):
                'lost_load_events': 0,
                'net_demand_mwh': 0}
 
-    cost = 0
-    kgco2 = 0 
-    ll = 0
-    demand_errors = []
-    wind_errors = []
     for action in schedule:
         action = np.where(np.array(action) > 0, 1, 0)
         obs, reward, done = env.step(action, deterministic)
-        cost -= reward
-        kgco2 += env.kgco2
         if env.ens:
             results['lost_load_events'] += 1
-            ll += 1
             print("ENS at period {}; "
                   "forecast: {:.2f}; "
                   "real: {:.2f}; "
@@ -177,8 +169,6 @@ def run_schedule(env, schedule, deterministic=False):
                                              env.net_demand,
                                              np.dot(action * env.availability, env.max_output),
                                              np.dot(action, env.max_output)))
-        demand_errors.append(env.arma_demand.xs[0])
-        wind_errors.append(env.arma_wind.xs[0])
 
         results['total_cost'] -= reward
         results['fuel_cost'] += env.fuel_cost
@@ -189,34 +179,19 @@ def run_schedule(env, schedule, deterministic=False):
 
     return results
 
-    # return cost, ll, demand_errors, wind_errors, kgco2
-
-
 def test_schedule(env,
                   schedule,
                   seed=999,
                   num_samples=1000,
                   deterministic=False):
 
-    demand_errors = np.zeros((num_samples, env.episode_length))
-    wind_errors = np.zeros((num_samples, env.episode_length))
-
-    test_costs = []
-    test_kgco2 = []
-    lost_loads = []
-
     results = []
-
     print("Testing schedule...")
     np.random.seed(seed)
     for i in range(num_samples):
         results_s = run_schedule(env=env, schedule=schedule, deterministic=deterministic)
-        results.append(results_s)
 
     return pd.DataFrame(results)
-
-    # return test_costs, lost_loads, test_kgco2
-
 
 def save_results(prof_name,
                  save_dir,
