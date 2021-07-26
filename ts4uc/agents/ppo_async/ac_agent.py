@@ -165,7 +165,7 @@ class ACAgent(nn.Module):
         else:
             raise ValueError(f"{kwargs.get('observation_processor')} is not a valid observation processor")
         
-        self.n_in_ac = 2*env.num_gen + self.obs_processor.obs_size
+        self.n_in_ac = 2*env.action_size + self.obs_processor.obs_size
         self.n_in_cr = self.obs_processor.obs_size
         
         self.max_demand = env.max_demand # used for normalisation
@@ -248,18 +248,18 @@ class ACAgent(nn.Module):
         x = self.obs_processor.process(obs)
  
         # Init action with constraints
-        action = np.zeros(env.num_gen, dtype=int)
+        action = np.zeros(env.action_size, dtype=int)
         action[np.where(env.must_on)[0]] = 1
         
         # Determine constrained gens
         constrained_gens = np.where(np.logical_or(env.must_on, env.must_off))
-        unconstrained_gens = np.delete(np.arange(env.num_gen), constrained_gens)
+        unconstrained_gens = np.delete(np.arange(env.action_size), constrained_gens)
         
         # Append action
         x = np.append(action, x)
         
         # Append one-hot encoding
-        x = np.append(np.zeros(env.num_gen), x)
+        x = np.append(np.zeros(env.action_size), x)
 
         # Convert state to tensor        
         x = torch.as_tensor(x).float().to(self.device)
@@ -297,8 +297,8 @@ class ACAgent(nn.Module):
             # Change action
             action[idx] = a
             
-            # Change state tensor x 
-            x[env.num_gen+idx] = a
+            # Change state tensor x
+            x[env.action_size+idx] = a
         
         return action, sub_obs, sub_acts, log_probs
     
@@ -311,18 +311,18 @@ class ACAgent(nn.Module):
         x = self.obs_processor.process(obs)
 
         # Init action with constraints
-        action = np.zeros(env.num_gen, dtype=int)
+        action = np.zeros(env.action_size, dtype=int)
         action[np.where(env.must_on)[0]] = 1
         
         # Determine constrained gens
         constrained_gens = np.where(np.logical_or(env.must_on, env.must_off))
-        unconstrained_gens = np.delete(np.arange(env.num_gen), constrained_gens)
+        unconstrained_gens = np.delete(np.arange(env.action_size), constrained_gens)
         
         # Append action
         x = np.append(action, x)
         
         # Append one-hot encoding
-        x = np.append(np.zeros(env.num_gen), x)
+        x = np.append(np.zeros(env.action_size), x)
 
         # Convert state to tensor        
         x = torch.as_tensor(x).float().to(self.device)
@@ -343,13 +343,13 @@ class ACAgent(nn.Module):
             a = pi.sample()
                         
             # Change state tensors x 
-            xs[:,env.num_gen+idx] = a
+            xs[:,env.action_size+idx] = a
             
             # Reset one-hot encoding
             xs[:,idx] = 0
         
         # Retrieve actions
-        actions = xs[:,env.num_gen:2*env.num_gen].cpu().detach().numpy()
+        actions = xs[:,env.action_size:2*env.action_size].cpu().detach().numpy()
 
         # Get unique actions
         uniq, counts = np.unique(actions, axis=0, return_counts=True)
