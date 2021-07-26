@@ -16,7 +16,7 @@ ac_arch="100,50,25"
 cr_arch="64,64"
 for c in 25 50;
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
-     ${date}_icml_carbon${c}/train/g${num_gen} $HOME/ts4uc/data/envs/carbon/${num_gen}gen_carbon${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ; 
+     ${date}_303/train/g${num_gen}_c${c} $HOME/ts4uc/data/envs/carbon/${num_gen}gen_carbon${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ; 
  done ;
 
 
@@ -33,7 +33,7 @@ ac_arch="64,64"
 cr_arch="100,50,25"
 for c in 25 50;
  do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
-     ${date}_icml_carbon${c}/train/g${num_gen} $HOME/ts4uc/data/envs/carbon/${num_gen}gen_carbon${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ; 
+     ${date}_303/train/g${num_gen}_c${c} $HOME/ts4uc/data/envs/carbon/${num_gen}gen_carbon${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ; 
  done ; 
 
 # 30 gen
@@ -49,6 +49,6 @@ ac_arch="64,64"
 cr_arch="400,300"
 for c in 25 50; 
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
-     ${date}_icml_carbon${c}/train/g${num_gen} $HOME/ts4uc/data/envs/carbon/${num_gen}gen_carbon${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ;
+     ${date}_303/train/g${num_gen}_c${c} $HOME/ts4uc/data/envs/carbon/${num_gen}gen_carbon${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ;
  done ;
 
