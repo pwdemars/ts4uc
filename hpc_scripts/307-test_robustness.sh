@@ -9,7 +9,7 @@ epoch="final"
 tree_search_func_name="ida_star"
 t=60
 heuristic_method="advanced_priority_list"
-for g in 10 20 30; 
+for g in 30; 
   do let secs=$t*48*3+500 && \
      time=$(date -d@$secs -u +%H:%M:%S) && \
      qsub -l h_rt=$time submit_anytime_tree_search.sh $HOME/Scratch/results/${date}_307/guided_${tree_search_func_name}/g${g} \
