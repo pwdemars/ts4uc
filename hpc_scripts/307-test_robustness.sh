@@ -23,7 +23,7 @@ for g in 30;
 												 ${tree_search_func_name} \
 												 $HOME/ts4uc/data/hpc_params/input_day_ahead_g${g}.txt \
 												 $heuristic_method \
-												 $seed \ 
+												 $seed \
 												 $num_scenarios
 	done ;
 done ;
