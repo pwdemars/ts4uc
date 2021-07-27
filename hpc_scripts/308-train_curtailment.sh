@@ -15,5 +15,5 @@ ac_arch="64,64"
 cr_arch="400,300"
 for c in 0 25 50 ; 
 do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ./submit_train.sh \
-     ${date}_308/g${num_gen} $HOME/ts4uc/data/envs/curtailment/${num_gen}gen_c${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ;
+     ${date}_308/g${num_gen}_c${c} $HOME/ts4uc/data/envs/curtailment/${num_gen}gen_c${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ;
 done
