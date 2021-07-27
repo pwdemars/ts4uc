@@ -16,6 +16,7 @@ tree_search_func_name=$7
 paramfile=$8
 heuristic_method=$9
 seed=${10:-1}
+num_scenarios=${11:-100}
 
 number=$SGE_TASK_ID
 
@@ -35,7 +36,7 @@ python $HOME/ts4uc/ts4uc/tree_search/anytime.py --save_dir $save_dir \
 												  --test_data $test_data \
 												  --branching_threshold $branching_threshold \
 												  --time_budget $time_budget \
-												  --num_scenarios 100 \
+												  --num_scenarios $num_scenarios \
 												  --tree_search_func_name $tree_search_func_name \
 												  --heuristic_method $heuristic_method \
 												  --seed $seed
