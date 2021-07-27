@@ -24,6 +24,6 @@ for g in 30;
 												 $HOME/ts4uc/data/hpc_params/input_day_ahead_g${g}.txt \
 												 $heuristic_method \
 												 $seed \
-												 $num_scenarios
+												 $num_scenarios ;
 	done ;
 done ;
