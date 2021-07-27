@@ -6,7 +6,7 @@ from rl4uc.environment import make_env
 from ts4uc.tree_search import node
 from ts4uc import helpers
 
-from ts4uc.tree_search.scenarios import get_net_demand_scenarios
+from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
 from ts4uc.agents.ppo_async.ac_agent import ACAgent
 from ts4uc.tree_search.algos import uniform_cost_search, a_star, rta_star, brute_force
 
@@ -22,7 +22,8 @@ import time
 
 def solve_day_ahead(env, 
                     horizon, 
-                    net_demand_scenarios,
+                    demand_scenarios,
+                    wind_scenarios,
                     tree_search_func=uniform_cost_search, 
                     **params):
     """
@@ -31,7 +32,7 @@ def solve_day_ahead(env,
     Return the schedule and the number of branches at the root for each time period. 
     """
     env.reset()
-    final_schedule = np.zeros((env.episode_length, env.num_gen))
+    final_schedule = np.zeros((env.episode_length, env.action_size))
 
     root = node.Node(env=env,
             parent=None,
@@ -46,7 +47,8 @@ def solve_day_ahead(env,
         terminal_timestep = min(env.episode_timestep + horizon, env.episode_length-1)
         path, cost = tree_search_func(root, 
                                       terminal_timestep, 
-                                      net_demand_scenarios,
+                                      demand_scenarios,
+                                      wind_scenarios,
                                       **params)
         a_best = path[0]
 
@@ -140,7 +142,8 @@ if __name__ == "__main__":
     env = make_env(mode='test', profiles_df=profile_df, **env_params)
 
     # Generate scenarios for demand and wind errors
-    scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
+    # scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
+    demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, args.num_scenarios)
 
     # Load policy 
     if args.policy_filename is not None:
@@ -162,7 +165,8 @@ if __name__ == "__main__":
     # Run the tree search
     s = time.time()
     schedule_result, period_times, breadths = solve_day_ahead(env=env, 
-                                      net_demand_scenarios=scenarios, 
+                                      demand_scenarios=demand_scenarios, 
+                                      wind_scenarios=wind_scenarios,
                                       tree_search_func=funcs_dict[args.tree_search_func_name],
                                       policy=policy,
                                       **params)

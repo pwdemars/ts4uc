@@ -25,7 +25,7 @@ def sample_errors(env, N, horizon, seeded=False):
 
     return demand_errors, wind_errors
 
-def calculate_expected_costs(env, action, net_demands, availability_scenarios=None):
+def calculate_expected_costs(env, action, demand_scenarios, wind_scenarios, availability_scenarios=None):
     """
     Calculate the expected fuel costs over a set of possible 
     net demands.
@@ -37,27 +37,29 @@ def calculate_expected_costs(env, action, net_demands, availability_scenarios=No
     total = 0
 
     if availability_scenarios is None:
-        availability_scenarios = np.ones(shape=(net_demands.size, env.num_gen))
+        availability_scenarios = np.ones(shape=(demand_scenarios.size, env.num_gen))
 
-    for net_demand, availability in zip(net_demands, availability_scenarios):
+    if env.curtailment:
+        curtail = bool(action[-1])
+        commitment_action = np.copy(action)[:-1]
+    else:
+        curtail = False
 
-        # if env.outages:
-        #     outage = env._sample_outage()
-        #     availability = env.availability - outage
-        #     availability = np.clip(availability, 0, 1)
-        #     if np.any(outage): 
-        #         print(outage)
-        # else:
-        #     availability = None
+    if curtail: 
+        net_demand_scenarios = demand_scenarios
+    else:
+        net_demand_scenarios = demand_scenarios - wind_scenarios
 
-        fuel_costs, disp = env.calculate_fuel_cost_and_dispatch(net_demand, action, availability)
+    for net_demand, availability in zip(net_demand_scenarios, availability_scenarios):
+
+        fuel_costs, disp = env.calculate_fuel_cost_and_dispatch(net_demand, commitment_action, availability)
         fuel_cost = np.sum(fuel_costs)
         lost_load_cost = env.calculate_lost_load_cost(net_demand, disp)
         # if lost_load_cost > 0:
             # print("Lost load at period {}. Demand {:.2f}, disp {:.2f}".format(env.episode_timestep, net_demand, np.sum(disp)))
         total += fuel_cost + lost_load_cost
 
-    exp_cost = total/net_demands.shape[0]
+    exp_cost = total/demand_scenarios.shape[0]
     exp_cost += env.start_cost
 
     return exp_cost
@@ -68,14 +70,15 @@ def get_net_demand_scenarios(profile_df, env, num_scenarios):
     scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
     scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
 
-    import pandas as pd 
-
-    df = pd.DataFrame({'max_demand_errors': np.max(demand_errors, axis=0),
-                       'min_wind_errors': np.min(wind_errors, axis=0),
-                       'std_demand_errors': np.std(demand_errors, axis=0),
-                       'std_wind_errors': np.std(wind_errors, axis=0),
-                       'max_demand_scenarios': np.max(scenarios, axis=0)})
     return scenarios
+
+def get_scenarios(profile_df, env, num_scenarios):
+
+    demand_errors, wind_errors = sample_errors(env, num_scenarios, env.episode_length)
+    demand_scenarios = profile_df.demand.values + demand_errors
+    wind_scenarios =  profile_df.wind.values + wind_errors
+    
+    return demand_scenarios, wind_scenarios
 
 def sample_availability_multiple(env, schedule, initial_availability):
     """

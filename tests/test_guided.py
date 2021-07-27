@@ -3,7 +3,7 @@
 
 from rl4uc.environment import make_env
 
-from ts4uc.tree_search.scenarios import get_net_demand_scenarios
+from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
 from ts4uc.tree_search.day_ahead import solve_day_ahead
 from ts4uc.tree_search.algos import uniform_cost_search
 from ts4uc.agents.ppo_async.ac_agent import ACAgent
@@ -51,10 +51,12 @@ def test_uniform_cost_search():
         policy.eval()
 
         # Generate scenarios for demand and wind errors
-        scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
+        # scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
+        demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, NUM_SCENARIOS)
 
         solve_returns = solve_day_ahead(env=env, 
-                                          net_demand_scenarios=scenarios, 
+                                          demand_scenarios=demand_scenarios, 
+                                          wind_scenarios=wind_scenarios,
                                           tree_search_func=uniform_cost_search,
                                           policy=policy,
                                           **params)

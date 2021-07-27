@@ -21,7 +21,8 @@ DEFAULT_HEURISTIC_METHOD='check_lost_load'
 
 def uniform_cost_search(node, 
                         terminal_timestep, 
-                        net_demand_scenarios,
+                        demand_scenarios,
+                        wind_scenarios,
                         **policy_kwargs):
     """Uniform cost search"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
@@ -35,10 +36,12 @@ def uniform_cost_search(node,
             return node_mod.get_solution(node)
         actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
-            net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
+            demand_scenarios_t = np.take(demand_scenarios, node.state.episode_timestep+1, axis=1)
+            wind_scenarios_t = np.take(wind_scenarios, node.state.episode_timestep+1, axis=1)
             child = expansion.get_child_node(node=node, 
                                              action=action, 
-                                             net_demand_scenarios=net_demand_scenarios_t)
+                                             demand_scenarios=demand_scenarios_t,
+                                             wind_scenarios=wind_scenarios_t)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost, id(child), child))
 
@@ -48,7 +51,8 @@ def uniform_cost_search(node,
 
 def a_star(node, 
            terminal_timestep, 
-           net_demand_scenarios,
+           demand_scenarios,
+           wind_scenarios,
            heuristic_method,
            early_stopping=True,
            recalc_costs=False,
@@ -69,8 +73,9 @@ def a_star(node,
             return node_mod.get_solution(node)
         actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
-            net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = expansion.get_child_node(node, action, net_demand_scenarios_t, recalc_costs=recalc_costs)
+            demand_scenarios_t = np.take(demand_scenarios, node.state.episode_timestep+1, axis=1)
+            wind_scenarios_t = np.take(wind_scenarios, node.state.episode_timestep+1, axis=1)
+            child = expansion.get_child_node(node, action, demand_scenarios_t, wind_scenarios_t, recalc_costs=recalc_costs)
             child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep, heuristic_method)
             node.children[action.tobytes()] = child
             # frontier.put((child.path_cost + child.heuristic_cost, id(child), child))
@@ -84,7 +89,8 @@ def a_star(node,
 
 def rta_star(node,
              terminal_timestep,
-             net_demand_scenarios,
+             demand_scenarios,
+             wind_scenarios,
              heuristic_method,
              **policy_kwargs):
     """Real time A*"""
@@ -99,8 +105,9 @@ def rta_star(node,
             return node_mod.get_solution(node)
         actions = expansion.get_actions(node, **policy_kwargs)
         for action in actions:
-            net_demand_scenarios_t = np.take(net_demand_scenarios, node.state.episode_timestep+1, axis=1)
-            child = expansion.get_child_node(node, action, net_demand_scenarios_t)
+            demand_scenarios_t = np.take(demand_scenarios, node.state.episode_timestep+1, axis=1)
+            wind_scenarios_t = np.take(wind_scenarios, node.state.episode_timestep+1, axis=1)
+            child = expansion.get_child_node(node, action, demand_scenarios, wind_scenarios)
             if child.heuristic_cost == None:
                 horizon = child.state.episode_length - child.state.episode_timestep - 1 # Run heuristic to the end of the episode
                 child.heuristic_cost = informed_search.heuristic(child, horizon, heuristic_method)
@@ -113,7 +120,8 @@ def rta_star(node,
 
 def brute_force(env,
                 terminal_timestep,
-                net_demand_scenarios,
+                demand_scenarios,
+                wind_scenarios,
                 heuristic_method,
                 **kwargs):
     policy_network = kwargs.get('policy', None)
@@ -126,12 +134,13 @@ def brute_force(env,
 
     path, cost = find_best_path(node=root,
                                 H=H,
-                                net_demand_scenarios=net_demand_scenarios,
+                                demand_scenarios=demand_scenarios,
+                                wind_scenarios=wind_scenarios,
                                 expansion_mode=expansion_mode)
     path = path[1:]
     return path, cost
 
-def find_best_path(node, H, net_demand_scenarios, expansion_mode='guided', cost_to_go=False, step_size=1):
+def find_best_path(node, H, demand_scenarios, wind_scenarios, expansion_mode='guided', cost_to_go=False, step_size=1):
     """
     Brute force algorithm, used for the original IEEE Smart Grid submission
     """

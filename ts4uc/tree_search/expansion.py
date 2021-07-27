@@ -47,6 +47,8 @@ def get_actions_with_policy(env, policy, **policy_kwargs):
     
     # Add the do nothing action
     action = np.where(env.status > 0, 1, 0)
+    if env.curtailment:
+        action = np.append(action, 0)
     action_id = ''.join(str(int(i)) for i in action)
     action_id = int(action_id, 2)
     action_dict.update({action_id: action})
@@ -55,7 +57,7 @@ def get_actions_with_policy(env, policy, **policy_kwargs):
 
     return actions
 
-def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, recalc_costs=False):
+def get_child_node(node, action, demand_scenarios=None, wind_scenarios=None, deterministic=True, recalc_costs=False):
     """
     Return a child node corresponding to taking `action` from the state 
     corresponding to `node`.
@@ -65,7 +67,7 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, 
     if action.tobytes() in node.children:
         child = node.children[action.tobytes()]
         if recalc_costs == True: # If rolling horizon, then always recalculate costs
-            child.step_cost = scenarios.calculate_expected_costs(child.state, action, net_demand_scenarios)
+            child.step_cost = scenarios.calculate_expected_costs(child.state, action, demand_scenarios, wind_scenarios) # FIXME: account for availability
         child.path_cost = node.path_cost + child.step_cost
         return node.children[action.tobytes()]
 
@@ -78,11 +80,10 @@ def get_child_node(node, action, net_demand_scenarios=None, deterministic=True, 
     else:
         availability_scenarios = None
 
-
-    if net_demand_scenarios is None:
+    if demand_scenarios is None:
         cost = -reward
     else:
-        cost = scenarios.calculate_expected_costs(new_env, action, net_demand_scenarios, availability_scenarios)
+        cost = scenarios.calculate_expected_costs(new_env, action, demand_scenarios, wind_scenarios, availability_scenarios)
 
     child = Node(env=new_env,
                 parent=node,

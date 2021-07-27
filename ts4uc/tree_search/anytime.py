@@ -19,17 +19,18 @@ from ts4uc.tree_search import node as node_mod, expansion, informed_search
 from ts4uc.tree_search.algos import a_star
 from ts4uc import helpers
 from ts4uc.agents.ppo_async.ac_agent import ACAgent
-from ts4uc.tree_search.scenarios import get_net_demand_scenarios
+from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
 
 def solve_day_ahead_anytime(env, 
                             time_budget, 
-                            net_demand_scenarios,
+                            demand_scenarios,
+                            wind_scenarios,
                             tree_search_func, 
                             **params):
     """
     """
     env.reset()
-    final_schedule = np.zeros((env.episode_length, env.num_gen))
+    final_schedule = np.zeros((env.episode_length, env.action_size))
 
     root = node_mod.Node(env=env,
             parent=None,
@@ -38,16 +39,17 @@ def solve_day_ahead_anytime(env,
             path_cost=0)
 
     if env.outages:
-        root.availability_scenarios = np.ones(shape=(net_demand_scenarios.shape[0], env.num_gen))
+        root.availability_scenarios = np.ones(shape=(demand_scenarios.shape[0], env.num_gen))
 
     depths = []
     breadths= []
     for t in range(env.episode_length):
         s = time.time()
         path = tree_search_func(root, 
-                                      time_budget,
-                                      net_demand_scenarios,
-                                      **params)
+                              time_budget,
+                              demand_scenarios,
+                              wind_scenarios,
+                              **params)
         depth = len(path)
         depths.append(depth)
         breadth = len(root.children)
@@ -74,7 +76,8 @@ def solve_day_ahead_anytime(env,
 
 def ida_star(root,
              time_budget,
-             net_demand_scenarios,
+             demand_scenarios,
+             wind_scenarios,
              heuristic_method,
              recalc_costs=False,
              **policy_kwargs):
@@ -96,7 +99,8 @@ def ida_star(root,
     # Always run to at least H=1
     best_path, _ = a_star(root,
                       root.state.episode_timestep+horizon,
-                      net_demand_scenarios,
+                      demand_scenarios,
+                      wind_scenarios,
                       heuristic_method,
                       early_stopping=False,
                       recalc_costs=recalc_costs,
@@ -113,7 +117,8 @@ def ida_star(root,
         try:
             best_path, _ = a_star(root,
                                   terminal_timestep,
-                                  net_demand_scenarios,
+                                  demand_scenarios,
+                                  wind_scenarios,
                                   heuristic_method,
                                   early_stopping=False,
                                   recalc_costs=recalc_costs,
@@ -133,7 +138,8 @@ def ida_star(root,
 
 def ida_star_non_unix(root,
                       time_budget,
-                      net_demand_scenarios,
+                      demand_scenarios,
+                      wind_scenarios,
                       heuristic_method,
                       **policy_kwargs):
     """
@@ -172,12 +178,16 @@ def ida_star_non_unix(root,
             actions = expansion.get_actions(node, **policy_kwargs)
 
             for action in actions:
-                net_demand_scenarios_t = np.take(net_demand_scenarios,
+                demand_scenarios_t = np.take(demand_scenarios,
                                                  node.state.episode_timestep+1,
                                                  axis=1)
+                wind_scenarios_t = np.take(wind_scenarios,
+                                             node.state.episode_timestep+1,
+                                             axis=1)
                 child = expansion.get_child_node(node,
                                                  action,
-                                                 net_demand_scenarios_t)
+                                                 demand_scenarios,
+                                                 wind_scenarios)
                 child.heuristic_cost = informed_search.heuristic(child,
                                                                  (terminal_timestep -
                                                                   child.state.episode_timestep),
@@ -188,42 +198,6 @@ def ida_star_non_unix(root,
                               child))
 
     return best_path
-
-
-def anytime_uniform_cost_search(node,
-                                terminal_timestep,
-                                net_demand_scenarios,
-                                **policy_kwargs):
-    """Uniform cost search with backup"""
-    if node.state.is_terminal() or (node.state.episode_timestep ==
-                                    terminal_timestep):
-        return node_mod.get_solution(node)
-    frontier = queue.PriorityQueue()
-    # include the object id in the priority queue.
-    # prevents type error when path_costs are identical.
-    frontier.put((0, id(node), node))
-    while True:
-        assert frontier, "Failed to find a goal state"
-        node = frontier.get()[2]
-        if node.state.is_terminal() or (node.state.episode_timestep ==
-                                        terminal_timestep):
-            return node_mod.get_solution(node)
-        actions = expansion.get_actions(node, **policy_kwargs)
-        for action in actions:
-            net_demand_scenarios_t = np.take(net_demand_scenarios,
-                                             node.state.episode_timestep+1,
-                                             axis=1)
-            child = expansion.get_child_node(node,
-                                             action,
-                                             net_demand_scenarios_t)
-            node.children[action.tobytes()] = child
-            frontier.put((child.path_cost, id(child), child))
-
-            # Early stopping if root has one child
-            if node.parent is None and len(actions) == 1:
-                return [actions[0]], 0
-        backup(node)
-
 
 if __name__ == "__main__":
 
@@ -295,7 +269,8 @@ if __name__ == "__main__":
     env = make_env(mode='test', profiles_df=profile_df, **env_params)
 
     # Generate scenarios for demand and wind errors
-    scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
+    # scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
+    demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, args.num_scenarios)
 
     # Load policy 
     if args.policy_filename is not None:
@@ -317,7 +292,8 @@ if __name__ == "__main__":
     # Run the tree search
     s = time.time()
     schedule_result, depths, breadths = solve_day_ahead_anytime(env=env, 
-                                                                net_demand_scenarios=scenarios, 
+                                                                demand_scenarios=demand_scenarios, 
+                                                                wind_scenarios=wind_scenarios,
                                                                 tree_search_func=funcs_dict[args.tree_search_func_name],
                                                                 policy=policy,
                                                                 **params)

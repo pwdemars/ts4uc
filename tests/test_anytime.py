@@ -1,6 +1,6 @@
 from rl4uc.environment import make_env
 
-from ts4uc.tree_search.scenarios import get_net_demand_scenarios
+from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
 from ts4uc.tree_search.anytime import solve_day_ahead_anytime
 from ts4uc.tree_search.anytime import ida_star
 from ts4uc import helpers
@@ -48,11 +48,13 @@ def test_ida_star():
     policy = None
 
     # Generate scenarios for demand and wind errors
-    scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
+    # scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
+    demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, NUM_SCENARIOS)
 
     solve_returns = solve_day_ahead_anytime(env=env, 
                                               time_budget=TIME_BUDGET,
-                                              net_demand_scenarios=scenarios, 
+                                              demand_scenarios=demand_scenarios, 
+                                              wind_scenarios=wind_scenarios,
                                               tree_search_func=ida_star,
                                               policy=policy,
                                               **params)
