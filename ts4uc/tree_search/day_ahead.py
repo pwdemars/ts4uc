@@ -178,7 +178,7 @@ if __name__ == "__main__":
 
     helpers.save_results(prof_name=prof_name, 
                          save_dir=args.save_dir, 
-                         num_gen=env.num_gen, 
+                         env=env, 
                          schedule=schedule_result,
                          test_costs=results['total_cost'], 
                          test_kgco2=results['kgco2'],

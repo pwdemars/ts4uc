@@ -304,7 +304,7 @@ if __name__ == "__main__":
     results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
     helpers.save_results(prof_name=prof_name, 
                          save_dir=args.save_dir, 
-                         num_gen=env.num_gen, 
+                         env=env, 
                          schedule=schedule_result,
                          test_costs=results['total_cost'].values, 
                          test_kgco2=results['kgco2'].values,

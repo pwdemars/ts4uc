@@ -153,7 +153,9 @@ def run_schedule(env, schedule, deterministic=False):
                'lost_load_cost': 0,
                'kgco2': 0,
                'lost_load_events': 0,
-               'net_demand_mwh': 0}
+               'demand_mwh': 0,
+               'wind_mwh': 0,
+               'curtailed_mwh': 0}
 
     for action in schedule:
         action = np.where(np.array(action) > 0, 1, 0)
@@ -167,15 +169,17 @@ def run_schedule(env, schedule, deterministic=False):
                   "tried to commit: {:.2f}".format(env.episode_timestep,
                                              env.forecast - env.wind_forecast,
                                              env.net_demand,
-                                             np.dot(action * env.availability, env.max_output),
-                                             np.dot(action, env.max_output)))
+                                             np.dot(action[:env.num_gen] * env.availability, env.max_output),
+                                             np.dot(action[:env.num_gen], env.max_output)))
 
         results['total_cost'] -= reward
         results['fuel_cost'] += env.fuel_cost
         results['start_cost'] += env.start_cost
         results['lost_load_cost'] += env.ens_cost
         results['kgco2'] += env.kgco2
-        results['net_demand_mwh'] += env.net_demand * env.dispatch_resolution
+        results['demand_mwh'] += env.demand_real * env.dispatch_resolution
+        results['wind_mwh'] += env.wind_real * env.dispatch_resolution
+        results['curtailed_mwh'] += env.curtailed_mwh
 
     return results
 
@@ -196,7 +200,7 @@ def test_schedule(env,
 
 def save_results(prof_name,
                  save_dir,
-                 num_gen,
+                 env,
                  schedule,
                  test_costs,
                  lost_loads,
@@ -215,7 +219,9 @@ def save_results(prof_name,
     all_lost_loads.to_csv(os.path.join(save_dir, '{}_lost_load.csv'.format(prof_name)), index=False, compression=None)
 
     # save schedule
-    columns = ['schedule_' + str(i) for i in range(num_gen)]
+    columns = ['schedule_' + str(i) for i in range(env.num_gen)]
+    if env.curtailment:
+        columns.append('curtailment')
     schedule_df = pd.DataFrame(schedule, columns=columns)
     schedule_df.to_csv(os.path.join(save_dir, '{}_solution.csv'.format(prof_name)), index=False)
 
