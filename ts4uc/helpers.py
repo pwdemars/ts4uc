@@ -244,7 +244,7 @@ def save_results(prof_name,
 
     if results_df is not None:
         results_df['profile'] = prof_name
-        results_df['usd_per_mwh'] = results_df.total_cost / results_df.net_demand_mwh
+        results_df['usd_per_mwh'] = results_df.total_cost / results_df.demand_mwh
         results_df.to_csv(os.path.join(save_dir, '{}_results.csv'.format(prof_name)), index=False)
 
     # save time taken
