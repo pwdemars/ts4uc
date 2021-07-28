@@ -44,6 +44,7 @@ def calculate_expected_costs(env, action, demand_scenarios, wind_scenarios, avai
         commitment_action = np.copy(action)[:-1]
     else:
         curtail = False
+        commitment_action = action
 
     if curtail: 
         net_demand_scenarios = demand_scenarios
