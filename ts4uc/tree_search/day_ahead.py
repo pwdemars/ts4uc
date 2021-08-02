@@ -40,6 +40,9 @@ def solve_day_ahead(env,
             step_cost=0,
             path_cost=0)
 
+    if env.outages:
+        root.availability_scenarios = np.ones(shape=(demand_scenarios.shape[0], env.num_gen))
+
     period_times = []
     breadths = []
     for t in range(env.episode_length):
