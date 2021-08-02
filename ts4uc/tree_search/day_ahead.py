@@ -147,6 +147,10 @@ if __name__ == "__main__":
     # Generate scenarios for demand and wind errors
     # scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
     demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, args.num_scenarios)
+    if env.outages:
+        global_outage_scenarios = get_global_outage_scenarios(env, env.episode_length + env.gen_info.status.max(), args.num_scenarios)
+    else:
+        global_outage_scenarios = None
 
     # Load policy 
     if args.policy_filename is not None:
@@ -170,6 +174,7 @@ if __name__ == "__main__":
     schedule_result, period_times, breadths = solve_day_ahead(env=env, 
                                       demand_scenarios=demand_scenarios, 
                                       wind_scenarios=wind_scenarios,
+                                      global_outage_scenarios=global_outage_scenarios,
                                       tree_search_func=funcs_dict[args.tree_search_func_name],
                                       policy=policy,
                                       **params)

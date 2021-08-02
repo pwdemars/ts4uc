@@ -57,6 +57,7 @@ def test_uniform_cost_search():
         solve_returns = solve_day_ahead(env=env, 
                                           demand_scenarios=demand_scenarios, 
                                           wind_scenarios=wind_scenarios,
+                                          global_outage_scenarios=None,
                                           tree_search_func=uniform_cost_search,
                                           policy=policy,
                                           **params)
