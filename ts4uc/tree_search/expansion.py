@@ -57,7 +57,8 @@ def get_actions_with_policy(env, policy, **policy_kwargs):
 
     return actions
 
-def get_child_node(node, action, demand_scenarios=None, wind_scenarios=None, deterministic=True, recalc_costs=False):
+def get_child_node(node, action, demand_scenarios=None, wind_scenarios=None,
+                   global_outage_scenarios=None, deterministic=True, recalc_costs=False):
     """
     Return a child node corresponding to taking `action` from the state 
     corresponding to `node`.
@@ -76,7 +77,10 @@ def get_child_node(node, action, demand_scenarios=None, wind_scenarios=None, det
 
     # If modelling outages, sample possible generator availabilities for this node
     if new_env.outages:
-        availability_scenarios = scenarios.sample_availability_single(new_env, action, node.availability_scenarios)
+        availability_scenarios = scenarios.sample_availability_scenarios(global_outage_scenarios, node.availability_scenarios, node.state.status) # sample outage scenarios (using OLD env)
+        # outage_scenarios = scenarios.sample_outage_scenarios(global_outage_scenarios, node.state.status) 
+        # availability_scenarios = np.clip(node.availability_scenarios - outage_scenarios, 0, 1)
+        # availability_scenarios = scenarios.sample_availability_single(new_env, action, node.availability_scenarios)
     else:
         availability_scenarios = None
 

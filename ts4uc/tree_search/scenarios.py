@@ -100,7 +100,7 @@ def sample_availability_multiple(env, schedule, initial_availability):
 
 def sample_availability_single(env, action, initial_availability):
     """
-    Sample possible realisations of generator availability for a single timesteps
+    Sample possible realisations of generator availability for a single timestep
 
     In order to sample availability correctly, we have to set initial 'seed' availabilities. 
     This function returns a new set of availabilities, with dimensions (n_scenarios, num_gen)
@@ -111,13 +111,41 @@ def sample_availability_single(env, action, initial_availability):
     num_scenarios = initial_availability.shape[0]
     availabilities = np.zeros(shape=(num_scenarios, env.num_gen))
     
-    env.commitment = action
     for i, avail in enumerate(initial_availability):
-        outage = env._sample_outage()
+        outage = env._sample_outage(avail, action)
         new_availability = np.clip(avail - outage, 0, 1)
         availabilities[i] = new_availability
         
-    env.availability = original_availability
-    env.commitment = original_commitment
-
     return availabilities
+
+def get_global_outage_scenarios(env, T, num_scenarios):
+    """
+    Generate a (env.num_gen, env.episode_length, num_scenarios) array of availability 
+    scenarios. 
+
+    The idea is that for a node with 
+    """
+
+    outage_scenarios = np.zeros((env.num_gen, T, num_scenarios))
+    avail = np.ones(env.num_gen)
+    action = np.ones(env.num_gen)
+    for t in range(T):
+        status = np.ones(env.num_gen)*(t+1)
+        for n in range(num_scenarios):
+            outage = env._sample_outage(avail, action, status)
+            outage_scenarios[:,t,n] = outage
+
+    return outage_scenarios
+
+def sample_outage_scenarios(global_outage_scenarios, status): 
+    outage_scenarios = np.zeros((global_outage_scenarios.shape[0], global_outage_scenarios.shape[-1]))
+    on_idx = np.where(status > 0)[0]
+    outage_scenarios[on_idx] = global_outage_scenarios[on_idx, status[on_idx]-1] 
+    return outage_scenarios.T
+
+def sample_availability_scenarios(global_outage_scenarios, previous_availability_scenarios, status):
+    outage_scenarios = sample_outage_scenarios(global_outage_scenarios, status)
+    availability_scenarios = np.clip(previous_availability_scenarios - outage_scenarios, 0, 1)
+    return availability_scenarios
+
+

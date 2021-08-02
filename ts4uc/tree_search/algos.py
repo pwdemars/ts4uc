@@ -23,6 +23,7 @@ def uniform_cost_search(node,
                         terminal_timestep, 
                         demand_scenarios,
                         wind_scenarios,
+                        global_outage_scenarios,
                         **policy_kwargs):
     """Uniform cost search"""
     if node.state.is_terminal() or node.state.episode_timestep == terminal_timestep:
@@ -41,7 +42,8 @@ def uniform_cost_search(node,
             child = expansion.get_child_node(node=node, 
                                              action=action, 
                                              demand_scenarios=demand_scenarios_t,
-                                             wind_scenarios=wind_scenarios_t)
+                                             wind_scenarios=wind_scenarios_t,
+                                             global_outage_scenarios=global_outage_scenarios)
             node.children[action.tobytes()] = child
             frontier.put((child.path_cost, id(child), child))
 
@@ -53,6 +55,7 @@ def a_star(node,
            terminal_timestep, 
            demand_scenarios,
            wind_scenarios,
+           global_outage_scenarios,
            heuristic_method,
            early_stopping=True,
            recalc_costs=False,
@@ -75,7 +78,7 @@ def a_star(node,
         for action in actions:
             demand_scenarios_t = np.take(demand_scenarios, node.state.episode_timestep+1, axis=1)
             wind_scenarios_t = np.take(wind_scenarios, node.state.episode_timestep+1, axis=1)
-            child = expansion.get_child_node(node, action, demand_scenarios_t, wind_scenarios_t, recalc_costs=recalc_costs)
+            child = expansion.get_child_node(node, action, demand_scenarios_t, wind_scenarios_t, global_outage_scenarios, recalc_costs=recalc_costs)
             child.heuristic_cost = informed_search.heuristic(child, terminal_timestep - child.state.episode_timestep, heuristic_method)
             node.children[action.tobytes()] = child
             # frontier.put((child.path_cost + child.heuristic_cost, id(child), child))

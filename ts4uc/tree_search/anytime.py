@@ -19,12 +19,13 @@ from ts4uc.tree_search import node as node_mod, expansion, informed_search
 from ts4uc.tree_search.algos import a_star
 from ts4uc import helpers
 from ts4uc.agents.ppo_async.ac_agent import ACAgent
-from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
+from ts4uc.tree_search.scenarios import get_scenarios, get_global_outage_scenarios
 
 def solve_day_ahead_anytime(env, 
                             time_budget, 
                             demand_scenarios,
                             wind_scenarios,
+                            global_outage_scenarios,
                             tree_search_func, 
                             **params):
     """
@@ -49,6 +50,7 @@ def solve_day_ahead_anytime(env,
                               time_budget,
                               demand_scenarios,
                               wind_scenarios,
+                              global_outage_scenarios,
                               **params)
         depth = len(path)
         depths.append(depth)
@@ -78,6 +80,7 @@ def ida_star(root,
              time_budget,
              demand_scenarios,
              wind_scenarios,
+             global_outage_scenarios,
              heuristic_method,
              recalc_costs=False,
              **policy_kwargs):
@@ -101,6 +104,7 @@ def ida_star(root,
                       root.state.episode_timestep+horizon,
                       demand_scenarios,
                       wind_scenarios,
+                      global_outage_scenarios,
                       heuristic_method,
                       early_stopping=False,
                       recalc_costs=recalc_costs,
@@ -119,6 +123,7 @@ def ida_star(root,
                                   terminal_timestep,
                                   demand_scenarios,
                                   wind_scenarios,
+                                  global_outage_scenarios,
                                   heuristic_method,
                                   early_stopping=False,
                                   recalc_costs=recalc_costs,
@@ -140,6 +145,7 @@ def ida_star_non_unix(root,
                       time_budget,
                       demand_scenarios,
                       wind_scenarios,
+                      global_outage_scenarios,
                       heuristic_method,
                       **policy_kwargs):
     """
@@ -271,6 +277,7 @@ if __name__ == "__main__":
     # Generate scenarios for demand and wind errors
     # scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
     demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, args.num_scenarios)
+    global_outage_scenarios = get_global_outage_scenarios(env, env.episode_length + env.gen_info.status.max(), args.num_scenarios)
 
     # Load policy 
     if args.policy_filename is not None:
@@ -294,6 +301,7 @@ if __name__ == "__main__":
     schedule_result, depths, breadths = solve_day_ahead_anytime(env=env, 
                                                                 demand_scenarios=demand_scenarios, 
                                                                 wind_scenarios=wind_scenarios,
+                                                                global_outage_scenarios=global_outage_scenarios,
                                                                 tree_search_func=funcs_dict[args.tree_search_func_name],
                                                                 policy=policy,
                                                                 **params)
