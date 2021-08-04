@@ -330,5 +330,7 @@ if __name__ == "__main__":
     print("Mean costs: ${:.2f}".format(np.mean(results['total_cost'])))
     print("Lost load prob: {:.3f}%".format(100*np.sum(results['lost_load_events'])/(args.num_samples * env.episode_length)))
     print("Time taken: {:.2f}s".format(time_taken))
+    print("Curtailed {:.2f}MWh".format(results.curtailed_mwh.mean()))
+    print("Mean CO2: {:.2f}kg".format(results.kgco2.mean()))
     print() 
 
