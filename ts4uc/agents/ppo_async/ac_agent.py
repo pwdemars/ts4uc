@@ -235,6 +235,39 @@ class ACAgent(nn.Module):
         x = self.obs_processor.process(obs)
         x = torch.as_tensor(x).float().to(self.device)
         return self.forward_cr(x), x
+
+    def obs_to_input(self, env, obs):
+        """
+        Preprocessing of observation to create an input array x
+
+        This includes pre-processing the states (clipping up/down times etc.) using self.obs_processor
+        as well as adding the one-hot encoding and action draft to the beginning of the input vector
+
+        The final array includes: [one hot encoding, draft action, state vector]
+        """
+        # Process observation, either extending or truncating the forecasts to correct length
+        processed_obs = self.obs_processor.process(obs)
+
+        # Init action with constraints
+        draft_action = np.zeros(env.action_size, dtype=int)
+        draft_action[np.where(env.must_on)[0]] = 1
+        
+        # Determine constrained gens
+        constrained_gens = np.where(np.logical_or(env.must_on, env.must_off))
+        unconstrained_gens = np.delete(np.arange(env.action_size), constrained_gens)
+
+        # If using curtailment action, then predict curtailment action (last in action vector) first
+        if env.curtailment: 
+            unconstrained_gens = np.roll(unconstrained_gens, 1)
+        
+        one_hot_encoding = np.zeros(env.action_size)
+        
+        x = np.concatenate([one_hot_encoding, draft_action, processed_obs])
+
+        # Convert state to tensor        
+        x = torch.as_tensor(x).float().to(self.device)
+
+        return x, unconstrained_gens, draft_action
         
     def generate_action(self, env, obs):
         """
@@ -245,24 +278,7 @@ class ACAgent(nn.Module):
             Sample action from softmax, change action[i]
             Change part of action part of state 
         """
-        x = self.obs_processor.process(obs)
- 
-        # Init action with constraints
-        action = np.zeros(env.action_size, dtype=int)
-        action[np.where(env.must_on)[0]] = 1
-        
-        # Determine constrained gens
-        constrained_gens = np.where(np.logical_or(env.must_on, env.must_off))
-        unconstrained_gens = np.delete(np.arange(env.action_size), constrained_gens)
-        
-        # Append action
-        x = np.append(action, x)
-        
-        # Append one-hot encoding
-        x = np.append(np.zeros(env.action_size), x)
-
-        # Convert state to tensor        
-        x = torch.as_tensor(x).float().to(self.device)
+        x, unconstrained_gens, action = self.obs_to_input(env, obs)
         
         # Init log_probs
         log_probs = []
@@ -307,30 +323,12 @@ class ACAgent(nn.Module):
         Function that generates N actions sequentially. Replaces and combines
         the generate_multiple_actions and generate_action functions.
         """
-        # Process observation, either extending or truncating the forecasts to correct length
-        x = self.obs_processor.process(obs)
-
-        # Init action with constraints
-        action = np.zeros(env.action_size, dtype=int)
-        action[np.where(env.must_on)[0]] = 1
-        
-        # Determine constrained gens
-        constrained_gens = np.where(np.logical_or(env.must_on, env.must_off))
-        unconstrained_gens = np.delete(np.arange(env.action_size), constrained_gens)
-        
-        # Append action
-        x = np.append(action, x)
-        
-        # Append one-hot encoding
-        x = np.append(np.zeros(env.action_size), x)
-
-        # Convert state to tensor        
-        x = torch.as_tensor(x).float().to(self.device)
+        x, unconstrained_gens, action = self.obs_to_input(env, obs)
 
         # Repeat x N times
         xs = x.repeat(N_samples, 1)
 
-        torch.manual_seed(self.test_seed) # Ensures that same set of actions are generated for a given observation
+        torch.manual_seed(self.test_seed) # Ensures that same set of actions are generated for a given observation
         
         for idx in unconstrained_gens:
             # Set one-hot encoding
@@ -358,7 +356,7 @@ class ACAgent(nn.Module):
         del xs
         del actions
 
-        # Determine actions meeting threshold
+        # Determine actions meeting threshold
         action_freqs = counts/N_samples # frequency of actions
         threshold_mask = action_freqs >= threshold # actions whose frequency exceeds threshold      
 
@@ -370,7 +368,7 @@ class ACAgent(nn.Module):
             
         best_actions = uniq[best_idx] 
         
-        # Take only 1/threshold actions 
+        # Take only 1/threshold actions 
         max_actions = int(1/threshold)
         best_actions = best_actions[:max_actions]
         # print("Actions meeting threshold: {}; total actions: {}".format(threshold_mask.sum(), len(best_actions)))
