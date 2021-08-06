@@ -6,7 +6,7 @@ date=$(date +"%y-%m-%d")
 num_gen=30
 workers=8
 epochs=300000
-hrs=24
+hrs=16
 entropy_coef=0.0
 clip_ratio=0.1
 ac_lr=3e-05
@@ -14,6 +14,8 @@ cr_lr=3e-04
 ac_arch="64,64"
 cr_arch="400,300"
 for c in 0 25 50 ; 
-do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ./submit_train.sh \
-     ${date}_308/g${num_gen}_c${c} $HOME/ts4uc/data/envs/curtailment/${num_gen}gen_c${c}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ;
-done
+  do for s in 100 200 500 ; 
+     do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ./submit_train.sh \
+     ${date}_308/g${num_gen}_c${c}_${s} $HOME/ts4uc/data/envs/curtailment/${num_gen}gen_c${c}_${s}.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch ;
+  done ; 
+done 
