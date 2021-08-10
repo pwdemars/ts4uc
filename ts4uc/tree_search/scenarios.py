@@ -47,9 +47,9 @@ def calculate_expected_costs(env, action, demand_scenarios, wind_scenarios, avai
         commitment_action = action
 
     if curtail: 
-        net_demand_scenarios = demand_scenarios
-    else:
-        net_demand_scenarios = demand_scenarios - wind_scenarios
+        wind_scenarios = wind_scenarios * env.curtailment_factor
+        
+    net_demand_scenarios = demand_scenarios - wind_scenarios
 
     for net_demand, availability in zip(net_demand_scenarios, availability_scenarios):
 
