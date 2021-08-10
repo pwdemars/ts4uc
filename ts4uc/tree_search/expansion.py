@@ -22,13 +22,13 @@ def get_actions(node, policy, **policy_kwargs):
 def get_all_actions(env):
     """Get all actions from the `env` state"""
     constrained_gens = np.where(np.logical_or(env.must_on, env.must_off))
-    unconstrained_gens = np.delete(np.arange(env.num_gen), constrained_gens)
+    unconstrained_gens = np.delete(np.arange(env.action_size), constrained_gens)
 
     # All permutations of available generators
     all_perms = np.array(list(itertools.product(range(2), repeat=unconstrained_gens.size)))
 
     # Create action array 
-    actions = np.zeros((all_perms.shape[0], env.num_gen))
+    actions = np.zeros((all_perms.shape[0], env.action_size))
     actions[:,constrained_gens] = env.commitment[constrained_gens]
     actions[:,unconstrained_gens] = all_perms
     
