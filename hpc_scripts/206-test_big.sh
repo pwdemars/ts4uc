@@ -6,6 +6,7 @@ date=$(date +"%y-%m-%d")
 #
 rho=02
 epoch=270000
+seed=100
 tree_search_func_name="ida_star"
 for g in 100; 
   do for t in 60;
@@ -20,7 +21,8 @@ for g in 100;
 														 0.${rho} \
 														 ${tree_search_func_name} \
 														 $HOME/ts4uc/data/hpc_params/input_day_ahead_g${g}.txt \
-														 $heuristic_method ;
+														 $heuristic_method \
+														 $seed ;
 	  done ;
 	done ;
   done ;
