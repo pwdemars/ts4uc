@@ -9,8 +9,8 @@ epochs=300000
 hrs=16
 entropy_coef=0.0
 clip_ratio=0.1
-ac_lr=1e-05
-cr_lr=1e-04
+ac_lr=3e-05
+cr_lr=3e-04
 ac_arch="64,64"
 cr_arch="400,300"
 for c in 0 25 50 ; 
