@@ -6,8 +6,8 @@ date=$(date +"%y-%m-%d")
 # 30 gen
 num_gen=30
 workers=8
-epochs=300000
-hrs=24
+epochs=500000
+hrs=30
 entropy_coef=0.0
 clip_ratio=0.1
 ac_lr=3e-05
