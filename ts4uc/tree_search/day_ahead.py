@@ -6,7 +6,7 @@ from rl4uc.environment import make_env
 from ts4uc.tree_search import node
 from ts4uc import helpers
 
-from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
+from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios, get_global_outage_scenarios
 from ts4uc.agents.ppo_async.ac_agent import ACAgent
 from ts4uc.tree_search.algos import uniform_cost_search, a_star, rta_star, brute_force
 
