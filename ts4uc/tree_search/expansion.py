@@ -77,7 +77,7 @@ def get_child_node(node, action, demand_scenarios=None, wind_scenarios=None,
 
     # If modelling outages, sample possible generator availabilities for this node
     if new_env.outages:
-        availability_scenarios = scenarios.sample_availability_scenarios(global_outage_scenarios, node.availability_scenarios, node.state.status) # sample outage scenarios (using OLD env)
+        availability_scenarios = scenarios.sample_availability_scenarios(global_outage_scenarios, node.availability_scenarios, node.state.status, action) # sample outage scenarios (using OLD env)
         # outage_scenarios = scenarios.sample_outage_scenarios(global_outage_scenarios, node.state.status) 
         # availability_scenarios = np.clip(node.availability_scenarios - outage_scenarios, 0, 1)
         # availability_scenarios = scenarios.sample_availability_single(new_env, action, node.availability_scenarios)

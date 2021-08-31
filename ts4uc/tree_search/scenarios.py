@@ -137,14 +137,17 @@ def get_global_outage_scenarios(env, T, num_scenarios):
 
     return outage_scenarios
 
-def sample_outage_scenarios(global_outage_scenarios, status): 
+def sample_outage_scenarios(global_outage_scenarios, status, action): 
     outage_scenarios = np.zeros((global_outage_scenarios.shape[0], global_outage_scenarios.shape[-1]))
-    on_idx = np.where(status > 0)[0]
-    outage_scenarios[on_idx] = global_outage_scenarios[on_idx, status[on_idx]-1] 
+    # on_idx = np.logical_and((np.where(status > 0)[0], action))
+    on_idx = np.logical_and(status, action)
+    print(on_idx)
+    outage_scenarios[on_idx] = global_outage_scenarios[on_idx, status[on_idx]] 
+    print(outage_scenarios.mean())
     return outage_scenarios.T
 
-def sample_availability_scenarios(global_outage_scenarios, previous_availability_scenarios, status):
-    outage_scenarios = sample_outage_scenarios(global_outage_scenarios, status)
+def sample_availability_scenarios(global_outage_scenarios, previous_availability_scenarios, status, action):
+    outage_scenarios = sample_outage_scenarios(global_outage_scenarios, status, action)
     availability_scenarios = np.clip(previous_availability_scenarios - outage_scenarios, 0, 1)
     return availability_scenarios
 
