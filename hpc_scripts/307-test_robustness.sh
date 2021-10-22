@@ -10,7 +10,7 @@ rho=05
 t=60
 seed=1
 heuristic_method="advanced_priority_list"
-for num_scenarios in 50 100 200 500 ;
+for num_scenarios in 50 100 200 500 1000 2000 5000 ;
 	do let secs=$t*48*3+500 && \
      time=$(date -d@$secs -u +%H:%M:%S) && \
      qsub -l h_rt=$time submit_anytime_tree_search.sh $HOME/Scratch/results/${date}_307/g${g}_s${num_scenarios} \
