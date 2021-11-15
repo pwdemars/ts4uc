@@ -384,7 +384,7 @@ class ACAgent(nn.Module):
 
         return action_dict, 0
         
-    def compute_loss_pi(self, data):
+    def compute_loss_pi(self, data, entropy_penalty=True, branching_threshold=0.05):
         """
         Function from spinningup implementation to calcualte the PPO loss. 
         """
@@ -399,13 +399,26 @@ class ACAgent(nn.Module):
         # entropy_coef = 0
         # loss_pi = -(logp * (adv + entropy_coef * entropy )).mean() # useful comparison: VPG
         
+        if entropy_penalty:
+            # Entropy penalty!
+            entropy_target = (branching_threshold)**(1./float(self.env.num_gen))
+            entropy_penalty = (pi.entropy().mean() - entropy_target)**2
+            entropy_bonus = -entropy_penalty
+
+        else:
+            # Vanilla entropy bonus
+            entropy_bonus = self.entropy_coef*pi.entropy().mean()
+
         # PPO
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1-self.clip_ratio, 1+self.clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv)).mean() - self.entropy_coef*pi.entropy().mean()
+
+        loss_pi = -(torch.min(ratio * adv, clip_adv)).mean() - entropy_bonus
         
         # compute entropy
         entropy = pi.entropy()
+
+        print("entropy: {:.3f}, entropy_bonus: {:.3f}".format(entropy.mean(), entropy_bonus))
         
         return loss_pi, entropy
     
