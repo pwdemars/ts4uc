@@ -401,7 +401,8 @@ class ACAgent(nn.Module):
         
         if entropy_penalty:
             # Entropy penalty!
-            entropy_target = (branching_threshold)**(1./float(self.env.num_gen))
+            target_p = (branching_threshold)**(1./float(self.env.num_gen)) # target probability for single generator
+            entropy_target = -target_p * np.log2(target_p) - (1-target_p) * np.log2(1-target_p) # conversion to entropy 
             entropy_penalty = (pi.entropy().mean() - entropy_target)**2
             entropy_bonus = -entropy_penalty
 
