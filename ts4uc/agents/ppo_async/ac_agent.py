@@ -178,8 +178,6 @@ class ACAgent(nn.Module):
         else:
             self.ac_arch = [int(v) for v in self.ac_arch.split(',')]
             self.cr_arch = [int(v) for v in self.cr_arch.split(',')]
-
-        print(self.ac_arch, self.cr_arch)
         
         if kwargs.get('credit_assignment_1hr') is None:
             self.gamma = DEFAULT_GAMMA
@@ -384,7 +382,7 @@ class ACAgent(nn.Module):
 
         return action_dict, 0
         
-    def compute_loss_pi(self, data, entropy_penalty=True, branching_threshold=0.05):
+    def compute_loss_pi(self, data):
         """
         Function from spinningup implementation to calcualte the PPO loss. 
         """
@@ -399,16 +397,18 @@ class ACAgent(nn.Module):
         # entropy_coef = 0
         # loss_pi = -(logp * (adv + entropy_coef * entropy )).mean() # useful comparison: VPG
         
-        if entropy_penalty:
+        if self.entropy_target is not None:
             # Entropy penalty!
-            target_p = (branching_threshold)**(1./float(self.env.num_gen)) # target probability for single generator
-            entropy_target = -target_p * np.log2(target_p) - (1-target_p) * np.log2(1-target_p) # conversion to entropy 
-            entropy_penalty = (pi.entropy().mean() - entropy_target)**2
-            entropy_bonus = -entropy_penalty
+            # target_p = (branching_threshold)**(1./float(self.env.num_gen)) # target probability for single generator
+            # entropy_target = -target_p * np.log2(target_p) - (1-target_p) * np.log2(1-target_p) # conversion to entropy 
+
+            # Entropy penalty 
+            entropy_penalty = (pi.entropy().mean() - self.entropy_target)**2
+            entropy_bonus = -entropy_penalty * self.entropy_coef
 
         else:
             # Vanilla entropy bonus
-            entropy_bonus = self.entropy_coef*pi.entropy().mean()
+            entropy_bonus = self.entropy_coef * pi.entropy().mean()
 
         # PPO
         ratio = torch.exp(logp - logp_old)
@@ -491,73 +491,3 @@ class ACAgent(nn.Module):
             v_optimizer.step()
 
         return entropy, loss_v, explained_variance
-
-    def update_new(self, actor_buf, critic_buf, pi_optimizer, v_optimizer):
-        
-        
-        if self.minibatch_size is not None:
-            TRAIN_PI_ITERS = int((self.num_epochs * self.buffer_size) / self.minibatch_size)
-        else:
-            TRAIN_PI_ITERS = self.num_epochs
-        
-        data = actor_buf.get()
-        for i in range(TRAIN_PI_ITERS):
-            if self.minibatch_size is not None:
-                minibatch = self.get_minibatch(data, self.buffer_size)
-            else:
-                minibatch=data
-
-            pi_optimizer.zero_grad()
-            loss_pi, entropy = self.compute_loss_pi_new(minibatch)
-            loss_pi.backward()
-            pi_optimizer.step()
-
-        data = critic_buf.get()
-        
-        if self.minibatch_size is not None:
-            max_idx = len(list(data.items())[0][1]) # Number of entries in the critic buffer
-            TRAIN_V_ITERS = int((self.num_epochs * max_idx) / self.minibatch_size)
-        else:
-            TRAIN_V_ITERS = self.num_epochs
-            
-        for i in range(TRAIN_V_ITERS):
-            
-            if self.minibatch_size is not None:
-                minibatch = self.get_minibatch(data, max_idx)
-            else:
-                minibatch=data
-
-            v_optimizer.zero_grad()
-            loss_v, explained_variance = self.compute_loss_v(minibatch)
-            loss_v.backward()            
-            v_optimizer.step()
-
-        return entropy, loss_v, explained_variance
-
-    def compute_loss_pi_new(self, data):
-        """
-        Function from spinningup implementation to calcualte the PPO loss. 
-        """
-        obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
-
-        # Policy loss
-        pi = self.forward_ac(obs)
-        # print(act)
-        logp = pi.log_prob(act)
-        
-        # Useful comparison: VPG
-        # entropy = pi.entropy()
-        # entropy_coef = 0
-        # loss_pi = -(logp * (adv + entropy_coef * entropy )).mean() # useful comparison: VPG
-        
-        # PPO
-        ratio = torch.exp(logp - logp_old)
-        clip_adv = torch.clamp(ratio, 1-self.clip_ratio, 1+self.clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv)).mean() - self.entropy_coef*pi.entropy().mean()
-        
-        # compute entropy
-        entropy = pi.entropy()
-        
-        return loss_pi, entropy
-        
-        

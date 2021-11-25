@@ -190,6 +190,7 @@ if __name__ == "__main__":
     parser.add_argument('--update_epochs', type=int, required=False, default=4)
     parser.add_argument('--observation_processor', type=str, required=False, default='LimitedHorizonProcessor')
     parser.add_argument('--gradient_steps', type=int, required=False, default=10)
+    parser.add_argument('--entropy_target', type=float, required=False, default=None)
 
     # Alternatively, pass a filename for trained weights and parameters, used to set network architectures.
     parser.add_argument('--ac_weights_fn', type=str, required=False, default=None)
@@ -205,7 +206,7 @@ if __name__ == "__main__":
     with open(os.path.join(args.save_dir, 'params.json'), 'w') as fp:
         fp.write(json.dumps(params, sort_keys=True, indent=4))
 
-    # If training using a pre-defined AC network (e.g. for transfer learning) overwrite archs
+    # If training using a pre-defined AC networks --> overwrite archs
     if args.ac_params_fn is not None:
         ac_params = json.load(open(args.ac_params_fn))
         params.update({'ac_arch': ac_params['ac_arch'], 'cr_arch': ac_params['cr_arch']})
