@@ -11,6 +11,7 @@ cr_lr=$8
 ac_arch=$9
 cr_arch=${10}
 buffer_size=${11:-2000}
+entropy_target=${12:-0}
 
 python $HOME/ts4uc/ts4uc/agents/ppo_async/train.py \
        --save_dir $save_dir \
@@ -26,4 +27,5 @@ python $HOME/ts4uc/ts4uc/agents/ppo_async/train.py \
        --buffer_size $buffer_size \
        --credit_assignment_1hr 0.9 \
        --forecast_horizon_hrs 12 \
-       --seed 10
+       --seed 10 \
+       --entropy_target $entropy_target

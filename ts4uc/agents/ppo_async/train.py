@@ -149,6 +149,10 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, env_params,
         
         epoch_counter += 1 
         print("Epoch: {}".format(epoch_counter.item()))
+
+        # If using target entropy, then schedule
+        if params.get('entropy_target') != 0:
+            shared_ac.entropy_coef = params.get('entropy_coef') * (3 * epoch_counter.item() / num_epochs )
         
         local_ac.load_state_dict(shared_ac.state_dict())
                 

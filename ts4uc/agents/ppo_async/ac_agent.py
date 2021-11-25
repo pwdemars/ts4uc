@@ -397,12 +397,12 @@ class ACAgent(nn.Module):
         # entropy_coef = 0
         # loss_pi = -(logp * (adv + entropy_coef * entropy )).mean() # useful comparison: VPG
         
-        if self.entropy_target is not None:
+        if self.entropy_target != 0:
             # Entropy penalty!
             # target_p = (branching_threshold)**(1./float(self.env.num_gen)) # target probability for single generator
             # entropy_target = -target_p * np.log2(target_p) - (1-target_p) * np.log2(1-target_p) # conversion to entropy 
 
-            # Entropy penalty 
+            # Entropy penalty
             entropy_penalty = (pi.entropy().mean() - self.entropy_target)**2
             entropy_bonus = -entropy_penalty * self.entropy_coef
 
