@@ -15,6 +15,7 @@ cr_lr=$8
 ac_arch=$9
 cr_arch=${10}
 buffer_size=${11:-2000}
+entropy_target=${12:-0}
 
 module load python3/3.7
 export OMP_NUM_THREADS=1
@@ -24,6 +25,6 @@ mkdir -p $HOME/Scratch/results/$save_dir
 cd $TMPDIR
 
 $HOME/ts4uc/hpc_scripts/train.sh \
-    $save_dir $env_fn $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size
+    $save_dir $env_fn $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
 
 tar zcvf $HOME/Scratch/results/$save_dir/results.tar.gz $TMPDIR
