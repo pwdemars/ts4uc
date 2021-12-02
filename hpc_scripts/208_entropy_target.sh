@@ -18,9 +18,9 @@ ac_arch="128,64"
 cr_arch="128,64"
 entropy_coef=0.
 entropy_target=0.
-for i in 1..10;
+for i in {1..10};
      do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-          ${date}_207/g${num_gen}_v1 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target ;
+          ${date}_208/g${num_gen}_no_target_${i} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target ;
 done ;
 
 
@@ -28,7 +28,7 @@ ac_arch="128,64"
 cr_arch="128,64"
 entropy_coef=1.
 entropy_target=0.1919
-for i in 1..10;
+for i in {1..10};
      do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-          ${date}_207/g${num_gen}_v5 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target ;
+          ${date}_208/g${num_gen}_w_target_${i} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target ;
 done ;
