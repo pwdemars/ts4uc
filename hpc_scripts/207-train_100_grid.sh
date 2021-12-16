@@ -13,73 +13,21 @@ ac_lr=1e-05
 cr_lr=1e-04
 buffer_size=5000
 epochs=300000
-
 ac_arch="128,64"
 cr_arch="128,64"
+
+i=0
 entropy_coef=0.
 entropy_target=0.
 qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v1 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
+     ${date}_207/g${num_gen}_v${i} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
 
-ac_arch="128,64"
-cr_arch="128,64"
-entropy_coef=0.1
-entropy_target=0.1567
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v2 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
 
-ac_arch="128,64"
-cr_arch="128,64"
-entropy_coef=0.1
-entropy_target=0.1919
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v3 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
-
-ac_arch="128,64"
-cr_arch="128,64"
-entropy_coef=1.
-entropy_target=0.1567
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v4 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
-
-ac_arch="128,64"
-cr_arch="128,64"
-entropy_coef=1.
-entropy_target=0.1919
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v5 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
-
-ac_arch="512,256"
-cr_arch="512,256"
-entropy_coef=0.
-entropy_target=0.
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v6 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
-
-ac_arch="512,256"
-cr_arch="512,256"
-entropy_coef=0.1
-entropy_target=0.1567
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v7 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
-
-ac_arch="512,256"
-cr_arch="512,256"
-entropy_coef=0.1
-entropy_target=0.1919
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v8 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
-
-ac_arch="512,256"
-cr_arch="512,256"
-entropy_coef=1.
-entropy_target=0.1567
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v9 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
-
-ac_arch="512,256"
-cr_arch="512,256"
-entropy_coef=1.
-entropy_target=0.1919
-qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
-     ${date}_207/g${num_gen}_v10 $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target
+i=1
+for entropy_coef in 0.1 1.0; 
+     do for entropy_target in 0.1567 0.1919 0.2648 ; 
+          do qsub -pe smp $workers -l h_rt=${hrs}:00:00 submit_train.sh \
+          ${date}_207/g${num_gen}_v${i} $HOME/ts4uc/data/day_ahead/${num_gen}gen/30min/env_params.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size $entropy_target \
+          && i=$((i+1)) ;
+     done ;
+done ;
