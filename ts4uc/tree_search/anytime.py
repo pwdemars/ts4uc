@@ -270,21 +270,9 @@ if __name__ == "__main__":
     print("Profile: {}".format(prof_name))
     print("------------------")
 
-    # Initialise environment with forecast profile and reference forecast (for scaling)
-    profile_df = pd.read_csv(args.test_data)
-    env = make_env(mode='test', profiles_df=profile_df, **env_params)
-
-    # Generate scenarios for demand and wind errors
-    # scenarios = get_net_demand_scenarios(profile_df, env, args.num_scenarios)
-    demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, args.num_scenarios)
-    if env.outages:
-        global_outage_scenarios = get_global_outage_scenarios(env, env.episode_length + env.gen_info.status.max(), args.num_scenarios)
-    else:
-        global_outage_scenarios = None
-
     # Load policy 
     if args.policy_filename is not None:
-        policy = ACAgent(env, test_seed=args.seed, **policy_params)
+        policy = ACAgent(env, test_seed=seed, **policy_params)
         if torch.cuda.is_available():
             policy.cuda()
         policy.load_state_dict(torch.load(args.policy_filename))        
@@ -294,25 +282,8 @@ if __name__ == "__main__":
         policy = None
         print("Unguided search")
 
-    # Convert the tree_search_method argument to a function:
-    func_list = [ida_star, ida_star_non_unix]
-    func_names = [f.__name__ for f in func_list]
-    funcs_dict = dict(zip(func_names, func_list))
+    results = run_test(policy, args.tree_search_func_name, args.test_data, args.num_samples, args.num_scenarios)
 
-    # Run the tree search
-    s = time.time()
-    schedule_result, depths, breadths = solve_day_ahead_anytime(env=env, 
-                                                                demand_scenarios=demand_scenarios, 
-                                                                wind_scenarios=wind_scenarios,
-                                                                global_outage_scenarios=global_outage_scenarios,
-                                                                tree_search_func=funcs_dict[args.tree_search_func_name],
-                                                                policy=policy,
-                                                                **params)
-    time_taken = time.time() - s
-
-    # Get distribution of costs for solution by running multiple times through environment
-    TEST_SAMPLE_SEED=999
-    results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, args.num_samples)
     helpers.save_results(prof_name=prof_name, 
                          save_dir=args.save_dir, 
                          env=env, 
@@ -333,4 +304,39 @@ if __name__ == "__main__":
     print("Curtailed {:.2f}MWh".format(results.curtailed_mwh.mean()))
     print("Mean CO2: {:.2f}kg".format(results.kgco2.mean()))
     print() 
+
+def run_test(policy, tree_search_func_name, test_data, num_samples=1000, num_scenarios=100): 
+
+    # Initialise environment with forecast profile and reference forecast (for scaling)
+    profile_df = pd.read_csv(test_data)
+    env = make_env(mode='test', profiles_df=profile_df, **env_params)
+
+    # Generate scenarios for demand and wind errors
+    demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, num_scenarios)
+    if env.outages:
+        global_outage_scenarios = get_global_outage_scenarios(env, env.episode_length + env.gen_info.status.max(), num_scenarios)
+    else:
+        global_outage_scenarios = None
+
+    # Convert the tree_search_method argument to a function:
+    func_list = [ida_star, ida_star_non_unix]
+    func_names = [f.__name__ for f in func_list]
+    funcs_dict = dict(zip(func_names, func_list))
+
+    # Run the tree search
+    s = time.time()
+    schedule_result, depths, breadths = solve_day_ahead_anytime(env=env, 
+                                                                demand_scenarios=demand_scenarios, 
+                                                                wind_scenarios=wind_scenarios,
+                                                                global_outage_scenarios=global_outage_scenarios,
+                                                                tree_search_func=funcs_dict[tree_search_func_name],
+                                                                policy=policy,
+                                                                **params)
+    time_taken = time.time() - s
+
+    # Get distribution of costs for solution by running multiple times through environment
+    TEST_SAMPLE_SEED=999
+    results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, num_samples)
+
+    return results
 
