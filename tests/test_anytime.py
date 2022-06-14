@@ -3,6 +3,7 @@ from rl4uc.environment import make_env
 from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
 from ts4uc.tree_search.anytime import solve_day_ahead_anytime
 from ts4uc.tree_search.anytime import ida_star
+from ts4uc.tree_search import anytime
 from ts4uc import helpers
 
 import numpy as np 
@@ -47,23 +48,8 @@ def test_ida_star():
     # Load policy
     policy = None
 
-    # Generate scenarios for demand and wind errors
-    # scenarios = get_net_demand_scenarios(profile_df, env, NUM_SCENARIOS)
-    demand_scenarios, wind_scenarios = get_scenarios(profile_df, env, NUM_SCENARIOS)
-    global_outage_scenarios=None
+    results = anytime.run(policy, env, params, 'ida_star', TIME_BUDGET, NUM_SAMPLES, NUM_SCENARIOS)
 
-    solve_returns = solve_day_ahead_anytime(env=env, 
-                                              time_budget=TIME_BUDGET,
-                                              demand_scenarios=demand_scenarios, 
-                                              wind_scenarios=wind_scenarios,
-                                              global_outage_scenarios=global_outage_scenarios,
-                                              tree_search_func=ida_star,
-                                              policy=policy,
-                                              **params)
-    schedule_result = solve_returns[0]
-
-    # Get distribution of costs for solution by running multiple times through environment
-    results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, NUM_SAMPLES)
     mean_cost = np.mean(results['total_cost'])
 
     assert np.isclose(mean_cost, 14419.559364953846), "Costs were: {}".format(mean_cost)
