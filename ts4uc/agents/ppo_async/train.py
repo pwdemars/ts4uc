@@ -139,7 +139,6 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, env_params,
 #     pi_scheduler = LambdaLR(pi_optimizer, lr_lambda=lambda_lr)
 #     v_scheduler = LambdaLR(v_optimizer, lr_lambda=lambda_lr)
 
-
     np.random.seed(params.get('seed') + rank)
     env = make_env(**env_params)
     
@@ -151,7 +150,7 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, env_params,
         print("Epoch: {}".format(epoch_counter.item()))
 
         # If using target entropy, then schedule
-        if params.get('entropy_target') != 0:
+        if params.get('entropy_target', None) is not None:
             shared_ac.entropy_coef = params.get('entropy_coef') * (3 * epoch_counter.item() / num_epochs )
         
         local_ac.load_state_dict(shared_ac.state_dict())

@@ -153,6 +153,7 @@ class ACAgent(nn.Module):
     """
     def __init__(self, env, **kwargs):
         super(ACAgent, self).__init__()
+        self.entropy_target = None
         self.__dict__.update(kwargs)
         self.dispatch_freq_mins = env.dispatch_freq_mins
         self.forecast_horizon = int(kwargs.get('forecast_horizon_hrs', 12) * 60 / self.dispatch_freq_mins)
@@ -185,9 +186,9 @@ class ACAgent(nn.Module):
             self.gamma = calculate_gamma(kwargs.get('credit_assignment_1hr'), env.dispatch_freq_mins)
         print("Gamma: {}".format(self.gamma))
 
-        attrs = vars(self)
-        for item in attrs.items():
-            print("%s: %s" % item)
+        # attrs = vars(self)
+        # for item in attrs.items():
+        #     print("%s: %s" % item)
         
         self.actor_buffer = ActorBuffer(self.n_in_ac, 1, self.buffer_size, self.gamma, env.min_reward)
         self.critic_buffer = CriticBuffer(self.n_in_cr, self.buffer_size, self.gamma, env.min_reward)
@@ -397,7 +398,7 @@ class ACAgent(nn.Module):
         # entropy_coef = 0
         # loss_pi = -(logp * (adv + entropy_coef * entropy )).mean() # useful comparison: VPG
         
-        if self.entropy_target != 0:
+        if self.entropy_target is not None:
             # Entropy penalty!
             # target_p = (branching_threshold)**(1./float(self.env.num_gen)) # target probability for single generator
             # entropy_target = -target_p * np.log2(target_p) - (1-target_p) * np.log2(1-target_p) # conversion to entropy 
@@ -418,8 +419,6 @@ class ACAgent(nn.Module):
         
         # compute entropy
         entropy = pi.entropy()
-
-        print("entropy: {:.3f}, entropy_bonus: {:.3f}".format(entropy.mean(), entropy_bonus))
         
         return loss_pi, entropy
     
