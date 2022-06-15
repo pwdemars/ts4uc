@@ -8,7 +8,8 @@ pkgs = {
         "numpy",
         "pandas",
         "torch",
-        "pytest"
+        "pytest",
+        "rl4uc"
     ]
 }
 
