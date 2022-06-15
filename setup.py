@@ -7,7 +7,8 @@ pkgs = {
     "required": [
         "numpy",
         "pandas",
-        "torch"
+        "torch",
+        "pytest"
     ]
 }
 
