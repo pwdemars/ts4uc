@@ -9,7 +9,8 @@ pkgs = {
         "pandas",
         "torch",
         "pytest",
-        "rl4uc"
+        "rl4uc",
+        "scipy"
     ]
 }
 
