@@ -21,8 +21,7 @@ from ts4uc import helpers
 from ts4uc.agents.ppo_async.ac_agent import ACAgent
 from ts4uc.tree_search.scenarios import get_scenarios, get_global_outage_scenarios
 
-def solve_day_ahead_anytime(env, 
-                            time_budget, 
+def solve_day_ahead_anytime(env,  
                             demand_scenarios,
                             wind_scenarios,
                             global_outage_scenarios,
@@ -30,6 +29,7 @@ def solve_day_ahead_anytime(env,
                             **params):
     """
     """
+
     env.reset()
     final_schedule = np.zeros((env.episode_length, env.action_size))
 
@@ -47,7 +47,6 @@ def solve_day_ahead_anytime(env,
     for t in range(env.episode_length):
         s = time.time()
         path = tree_search_func(root, 
-                              time_budget,
                               demand_scenarios,
                               wind_scenarios,
                               global_outage_scenarios,
@@ -77,13 +76,12 @@ def solve_day_ahead_anytime(env,
 
 
 def ida_star(root,
-             time_budget,
              demand_scenarios,
              wind_scenarios,
              global_outage_scenarios,
              heuristic_method,
              recalc_costs=False,
-             **policy_kwargs):
+             **params):
 
     class TimeoutException(Exception):   # Custom exception class
         pass
@@ -108,10 +106,10 @@ def ida_star(root,
                       heuristic_method,
                       early_stopping=False,
                       recalc_costs=recalc_costs,
-                      **policy_kwargs)
+                      **params)
 
     while True:
-        time_remaining = max(0.01, time_budget - (time.time() - start_time))
+        time_remaining = max(0.01, params.get('time_budget') - (time.time() - start_time))
         signal.setitimer(signal.ITIMER_REAL, time_remaining)
 
         horizon += 1
@@ -127,7 +125,7 @@ def ida_star(root,
                                   heuristic_method,
                                   early_stopping=False,
                                   recalc_costs=recalc_costs,
-                                  **policy_kwargs)
+                                  **params)
         except TimeoutException:
             break
         else:
@@ -147,7 +145,7 @@ def ida_star_non_unix(root,
                       wind_scenarios,
                       global_outage_scenarios,
                       heuristic_method,
-                      **policy_kwargs):
+                      **params):
     """
     IDA* that will run on non-Unix system (doesn't rely on signal).
     """
@@ -181,7 +179,7 @@ def ida_star_non_unix(root,
                                             terminal_timestep):
                 best_path, _ = node_mod.get_solution(node)
                 break
-            actions = expansion.get_actions(node, **policy_kwargs)
+            actions = expansion.get_actions(node, **params)
 
             for action in actions:
                 demand_scenarios_t = np.take(demand_scenarios,
@@ -223,7 +221,6 @@ def run(policy, env, params, tree_search_func_name, time_budget, num_samples=100
     s = time.time()
     schedule_result, depths, breadths = solve_day_ahead_anytime(env=env,
                                                                 demand_scenarios=demand_scenarios, 
-                                                                time_budget=time_budget,
                                                                 wind_scenarios=wind_scenarios,
                                                                 global_outage_scenarios=global_outage_scenarios,
                                                                 tree_search_func=funcs_dict[tree_search_func_name],
