@@ -203,7 +203,7 @@ def ida_star_non_unix(root,
 
     return best_path
 
-def run(policy, env, params, tree_search_func_name, time_budget, num_samples=1000, num_scenarios=100): 
+def run(policy, env, params, tree_search_func_name, num_samples=1000, num_scenarios=100): 
 
     # Generate scenarios for demand and wind errors
     demand_scenarios, wind_scenarios = get_scenarios(env.profiles_df, env, num_scenarios)
@@ -231,6 +231,7 @@ def run(policy, env, params, tree_search_func_name, time_budget, num_samples=100
     # Get distribution of costs for solution by running multiple times through environment
     TEST_SAMPLE_SEED=999
     results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, num_samples)
+    results['date'] = env.profiles_df.date.values[0]
 
     return results
 

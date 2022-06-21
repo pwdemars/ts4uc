@@ -12,8 +12,6 @@ import torch
 import json
 import warnings
 
-POLICY_FILENAME = '../data/dummy_policies/g5/ac_final.pt' 
-POLICY_PARAMS_FN = '../data/dummy_policies/g5/params.json'
 ENV_PARAMS_FN = '../data/dummy_policies/g5/env_params.json'
 TEST_DATA_FN = '../data/day_ahead/5gen/30min/profile_2019-11-09.csv'
 HORIZON = 2
@@ -33,7 +31,6 @@ def test_ida_star():
 
     # Load parameters
     env_params = json.load(open(ENV_PARAMS_FN))
-    policy_params = json.load(open(POLICY_PARAMS_FN))
 
     # Load profile 
     profile_df = pd.read_csv(TEST_DATA_FN)
