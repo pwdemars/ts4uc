@@ -16,7 +16,7 @@ pkgs = {
 
 setuptools.setup(
     name="ts4uc", 
-    version="0.0.2",
+    version="0.0.3",
     author="Patrick de Mars",
     author_email="pwdemars@gmail.com",
     description="Tree search and reinforcement learning for the unit commitment problem",
