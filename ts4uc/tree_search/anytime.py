@@ -203,6 +203,29 @@ def ida_star_non_unix(root,
 
     return best_path
 
+def solve_with_tree_search(ep_path, policy, env_params, ts_params): 
+    
+    profile_df = pd.read_csv(ep_path) 
+
+    # Optionally reduce the length of the episodes (for speed)
+    if ts_params.get('truncate_periods', None) is not None:
+        profile_df = profile_df.iloc[:ts_params.get('truncate_periods')]
+    
+    env = make_env(mode='test', profiles_df=profile_df, **env_params)
+    results = anytime.run(policy, env, ts_params, 'ida_star', ts_params['num_samples'], ts_params['num_scenarios'])
+    return results
+
+def tree_search_dir(policy, test_dir, env_params, ts_params): 
+    
+    # Determine paths for validation eps
+    ep_paths = [os.path.join(test_dir, p) for p in os.listdir(test_dir) if '.csv' in p]
+
+    # Run GTS on validation eps (in parallel)
+    pool = Pool()  
+    ep_results = pool.starmap(solve_with_tree_search, [(p, policy, env_params, ts_params) for p in ep_paths])
+    ep_results = pd.concat(ep_results) # Append to single df 
+    return ep_results
+
 def run(policy, env, params, tree_search_func_name, num_samples=1000, num_scenarios=100): 
 
     # Generate scenarios for demand and wind errors
