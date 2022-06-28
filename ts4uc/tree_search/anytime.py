@@ -213,7 +213,7 @@ def solve_with_tree_search(ep_path, policy, env_params, ts_params):
         profile_df = profile_df.iloc[:ts_params.get('truncate_periods')]
     
     env = make_env(mode='test', profiles_df=profile_df, **env_params)
-    results = anytime.run(policy, env, ts_params, 'ida_star', ts_params['num_samples'], ts_params['num_scenarios'])
+    results = run(policy, env, ts_params, 'ida_star', ts_params['num_samples'], ts_params['num_scenarios'])
     return results
 
 def tree_search_dir(policy, test_dir, env_params, ts_params): 
