@@ -12,6 +12,7 @@ import argparse
 import json
 import random
 import signal
+from multiprocessing import Pool
 
 from rl4uc.environment import make_env
 
