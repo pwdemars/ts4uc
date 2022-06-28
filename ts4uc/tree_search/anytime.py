@@ -75,6 +75,12 @@ def solve_day_ahead_anytime(env,
         
     return final_schedule, depths, breadths
 
+class TimeoutException(Exception):   # Custom exception class
+    pass
+
+def timeout_handler(signum, frame):   # Custom signal handler
+    raise TimeoutException
+
 
 def ida_star(root,
              demand_scenarios,
@@ -83,12 +89,6 @@ def ida_star(root,
              heuristic_method,
              recalc_costs=False,
              **params):
-
-    class TimeoutException(Exception):   # Custom exception class
-        pass
-
-    def timeout_handler(signum, frame):   # Custom signal handler
-        raise TimeoutException
 
     # Change the behavior of SIGALRM
     signal.signal(signal.SIGALRM, timeout_handler)
