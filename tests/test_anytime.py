@@ -47,7 +47,7 @@ def test_ida_star():
     # Load policy
     policy = None
 
-    results = anytime.run(policy, env, params, 'ida_star', NUM_SAMPLES, NUM_SCENARIOS)
+    results, schedule, depths, breadths = anytime.run(policy, env, params, 'ida_star', NUM_SAMPLES, NUM_SCENARIOS)
 
     mean_cost = np.mean(results['total_cost'])
 
