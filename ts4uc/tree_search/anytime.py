@@ -213,13 +213,14 @@ def solve_with_tree_search(ep_path, policy, env_params, ts_params):
         profile_df = profile_df.iloc[:ts_params.get('truncate_periods')]
     
     env = make_env(mode='test', profiles_df=profile_df, **env_params)
-    results, schedule = run(policy, env, ts_params, 'ida_star', ts_params['num_samples'], ts_params['num_scenarios'])
-    return results, schedule
+    results, schedule, depths, breadths = run(policy, env, ts_params, 'ida_star', ts_params['num_samples'], ts_params['num_scenarios'])
+    return results, schedule, depths, breadths
 
 def schedule_to_df(schedule, date):
     schedule = pd.DataFrame(schedule, dtype=int)
     schedule.columns = ['gen{}'.format(i+1) for i in range(schedule.columns.size)]
     schedule['date'] = date
+    schedule['period'] = np.arange(schedule.shape[0])
     return schedule
 
 def tree_search_dir(policy, test_dir, env_params, ts_params): 
@@ -229,9 +230,11 @@ def tree_search_dir(policy, test_dir, env_params, ts_params):
 
     # Run GTS on validation eps (in parallel)
     pool = Pool()  
-    ep_results, schedules = zip(*pool.starmap(solve_with_tree_search, [(p, policy, env_params, ts_params) for p in ep_paths]))
+    ep_results, schedules, depths, breadths = zip(*pool.starmap(solve_with_tree_search, [(p, policy, env_params, ts_params) for p in ep_paths]))
     ep_results_df = pd.concat(ep_results) # Append results to single df 
     schedules_df = pd.concat([schedule_to_df(s, r.date[0]) for s, r in zip(schedules, ep_results)])
+    schedules_df['depth'] = np.concatenate(depths)
+    schedules_df['breadth'] = np.concatenate(breadths)
 
     return ep_results_df, schedules_df
 
@@ -265,7 +268,7 @@ def run(policy, env, params, tree_search_func_name, num_samples=1000, num_scenar
     results = helpers.test_schedule(env, schedule_result, TEST_SAMPLE_SEED, num_samples)
     results['date'] = env.profiles_df.date.values[0]
 
-    return results, schedule_result
+    return results, schedule_result, depths, breadths
 
 if __name__ == "__main__":
 
