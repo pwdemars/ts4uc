@@ -110,12 +110,14 @@ def ida_star(root,
                       **params)
 
     while True:
-        time_remaining = max(0.01, params.get('time_budget') - (time.time() - start_time))
-        signal.setitimer(signal.ITIMER_REAL, time_remaining)
 
+        # Increment horizon 
         horizon += 1
         terminal_timestep = min(root.state.episode_timestep+horizon,
                                 root.state.episode_length-1)
+
+        time_remaining = max(0.01, params.get('time_budget') - (time.time() - start_time))
+        signal.setitimer(signal.ITIMER_REAL, time_remaining)
 
         try:
             best_path, _ = a_star(root,
@@ -231,6 +233,8 @@ def tree_search_dir(policy, test_dir, env_params, ts_params):
     # Run GTS on validation eps (in parallel)
     pool = Pool()  
     ep_results, schedules, depths, breadths = zip(*pool.starmap(solve_with_tree_search, [(p, policy, env_params, ts_params) for p in ep_paths]))
+    pool.close()
+    pool.join()
     ep_results_df = pd.concat(ep_results) # Append results to single df 
     schedules_df = pd.concat([schedule_to_df(s, r.date[0]) for s, r in zip(schedules, ep_results)])
     schedules_df['depth'] = np.concatenate(depths)
