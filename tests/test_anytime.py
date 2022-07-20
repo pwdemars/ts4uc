@@ -1,10 +1,5 @@
 from rl4uc.environment import make_env
-
-from ts4uc.tree_search.scenarios import get_net_demand_scenarios, get_scenarios
-from ts4uc.tree_search.anytime import solve_day_ahead_anytime
-from ts4uc.tree_search.anytime import ida_star
 from ts4uc.tree_search import anytime
-from ts4uc import helpers
 
 import numpy as np 
 import pandas as pd 
@@ -57,3 +52,26 @@ def test_ida_star():
         message = 'Costs were {:.2f}; expected {:.2f}'.format(mean_cost, expected_cost)
         warnings.warn(UserWarning(message))
 
+def test_ida_star_with_outages():
+    np.random.seed(SEED)
+
+    # Load profile 
+    profile_df = pd.read_csv(TEST_DATA_FN)
+    profile_df = profile_df[:TIME_PERIODS]
+
+    params = {'horizon': HORIZON,
+            'branching_threshold': BRANCHING_THRESHOLD,
+            'heuristic_method': HEURISTIC_METHOD,
+            'time_budget': TIME_BUDGET}
+
+    # Init env
+    env = make_env(mode='test', profiles_df=profile_df, num_gen=5, outages=True, outage_model='exp_weibull', repairs=True)
+
+    # Load policy
+    policy = None
+
+    results, schedule, depths, breadths = anytime.run(policy, env, params, 'ida_star', NUM_SAMPLES, NUM_SCENARIOS)
+
+    mean_cost = np.mean(results['total_cost'])
+
+    assert np.isclose(mean_cost, 14726.128497236885), mean_cost
