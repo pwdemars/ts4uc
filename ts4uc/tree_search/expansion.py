@@ -84,7 +84,8 @@ def get_child_node(node, action, demand_scenarios=None, wind_scenarios=None,
     # If modelling repairs, update the availability scenarios by sampling repairs 
     # Note this assumes a constant repair rate currently (no dependence on generator up/down times)
     if new_env.repairs:
-        availability_scenarios = scenarios.sample_and_update_availability_with_repairs(new_env, node.availability_scenarios)
+        repairs = scenarios.sample_repair_scenarios(new_env, node.availability_scenarios)
+        availability_scenarios = np.clip(availability_scenarios + repairs, 0, 1)
         
     if demand_scenarios is None:
         cost = -reward
@@ -98,5 +99,5 @@ def get_child_node(node, action, demand_scenarios=None, wind_scenarios=None,
                 path_cost=node.path_cost + cost)
 
     child.availability_scenarios = availability_scenarios
-    
+
     return child
