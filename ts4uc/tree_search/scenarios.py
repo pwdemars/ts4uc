@@ -144,6 +144,11 @@ def sample_outage_scenarios(global_outage_scenarios, status, action):
     outage_scenarios[on_idx] = global_outage_scenarios[on_idx, status[on_idx]] 
     return outage_scenarios.T
 
+def sample_and_update_availability_with_repairs(env, availability_scenarios):
+    repairs = np.apply_along_axis(env._sample_repair, 1, availability_scenarios)
+    availability_scenarios += repairs
+    return availability_scenarios
+
 def sample_availability_scenarios(global_outage_scenarios, previous_availability_scenarios, status, action):
     outage_scenarios = sample_outage_scenarios(global_outage_scenarios, status, action)
     availability_scenarios = np.clip(previous_availability_scenarios - outage_scenarios, 0, 1)
