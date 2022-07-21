@@ -339,9 +339,13 @@ if __name__ == "__main__":
     print("Profile: {}".format(prof_name))
     print("------------------")
 
+    # Init env
+    profile_df = pd.read_csv(args.test_data)
+    env = make_env(mode='test', profiles_df=profile_df, **env_params)
+
     # Load policy 
     if args.policy_filename is not None:
-        policy = ACAgent(env, test_seed=seed, **policy_params)
+        policy = ACAgent(env, test_seed=args.seed, **policy_params)
         if torch.cuda.is_available():
             policy.cuda()
         policy.load_state_dict(torch.load(args.policy_filename))        
@@ -350,12 +354,8 @@ if __name__ == "__main__":
     else:
         policy = None
         print("Unguided search")
-
-    # Init env
-    profile_df = pd.read_csv(test_data)
-    env = make_env(mode='test', profiles_df=profile_df, **env_params)
-
-    results = run(policy, env, params, args.tree_search_func_name, args.time_budget, args.num_samples, args.num_scenarios)
+    
+    results, schedule_result, depths, breadths = run(policy, env, params, args.tree_search_func_name, args.num_samples, args.num_scenarios)
 
     helpers.save_results(prof_name=prof_name, 
                          save_dir=args.save_dir, 
