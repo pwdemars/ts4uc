@@ -355,7 +355,10 @@ if __name__ == "__main__":
         policy = None
         print("Unguided search")
     
+    # Run GTS
+    s = time.time()
     results, schedule_result, depths, breadths = run(policy, env, params, args.tree_search_func_name, args.num_samples, args.num_scenarios)
+    time_taken = time.time() - s
 
     helpers.save_results(prof_name=prof_name, 
                          save_dir=args.save_dir, 
