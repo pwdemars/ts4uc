@@ -150,17 +150,21 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, env_params,
         print("Epoch: {}".format(epoch_counter.item()))
 
         # If using target entropy, then schedule
-        if params.get('entropy_target', None) is not None:
+        if params.get('entropy_target', 0) != 0:
             shared_ac.entropy_coef = params.get('entropy_coef') * (3 * epoch_counter.item() / num_epochs )
+
+        # Anneal entropy
+        ANNEAL_ENTROPY = True
+        if ANNEAL_ENTROPY: 
+            new_coef = (1 - epoch_counter / num_epochs) * params['entropy_coef']
+            print(new_coef)
+            local_ac.entropy_coef = shared_ac.entropy_coef = new_coef
+
         
         local_ac.load_state_dict(shared_ac.state_dict())
                 
         # Run an epoch, including updating the shared network
         run_epoch(save_dir, env, local_ac, shared_ac, pi_optimizer, v_optimizer, epoch_counter)
-        
-        # Step LRs
-#         pi_scheduler.step()
-#         v_scheduler.step()
     
     # Record time taken
     time_taken = time.time() - start_time
