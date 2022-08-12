@@ -4,7 +4,7 @@
 date=$(date +"%y-%m-%d")
 
 workers=8
-epochs=500000
+epochs=300000
 hrs=48
 entropy_coef=0.05
 clip_ratio=0.1
