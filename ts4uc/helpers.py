@@ -210,13 +210,6 @@ def save_results(prof_name,
                  period_time_taken=None,
                  breadths=None,
                  depths=None):
-    # save test costs
-    all_test_costs = pd.DataFrame({prof_name: test_costs})
-    all_test_costs.to_csv(os.path.join(save_dir, '{}_costs.csv'.format(prof_name)), index=False, compression=None)
-
-    # save lost load events
-    all_lost_loads = pd.DataFrame({prof_name: lost_loads})
-    all_lost_loads.to_csv(os.path.join(save_dir, '{}_lost_load.csv'.format(prof_name)), index=False, compression=None)
 
     # save schedule
     columns = ['schedule_' + str(i) for i in range(env.num_gen)]
@@ -238,9 +231,6 @@ def save_results(prof_name,
             tree_df['breadth'] = breadths
                                
         tree_df.to_csv(os.path.join(save_dir, '{}_tree.csv'.format(prof_name)), index=False)
-
-    test_kgco2 = pd.DataFrame({prof_name: test_kgco2})
-    test_kgco2.to_csv(os.path.join(save_dir, '{}_co2.csv'.format(prof_name)), index=False, compression=None)
 
     if results_df is not None:
         results_df['profile'] = prof_name

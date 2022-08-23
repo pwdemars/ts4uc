@@ -68,10 +68,14 @@ def calculate_expected_costs(env, action, demand_scenarios, wind_scenarios, avai
 def get_net_demand_scenarios(profile_df, env, num_scenarios):
 
     demand_errors, wind_errors = sample_errors(env, num_scenarios, env.episode_length)
-    scenarios = (profile_df.demand.values + demand_errors) - (profile_df.wind.values + wind_errors)
-    scenarios = np.clip(scenarios, env.min_demand, env.max_demand)
 
-    return scenarios
+    demand_scenarios = np.maximum(0, profile_df.demand.values + demand_errors)
+    wind_scenarios = np.maximum(0, profile_df.wind.values + wind_errors)
+    net_demand_scenarios = np.clip(demand_scenarios - wind_scenarios, env.min_demand, env.max_demand)
+
+    print(net_demand_scenarios.shape)
+
+    return net_demand_scenarios
 
 def get_scenarios(profile_df, env, num_scenarios):
 

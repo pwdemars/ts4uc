@@ -16,5 +16,5 @@ buffer_size=5000
 
 for num_gen in {40,50} ; 
   do qsub -pe smp $workers -l h_rt=${hrs}:00:00 ../submit_train.sh \
-     ${date}_convex_opt_comp/g${num_gen} $HOME/AISO_HPC/AISO/rl4uc/rl4uc/data/envs/${num_gen}gen.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size ;
+     ${date}_convex_opt_comp/g${num_gen}_$RANDOM $HOME/AISO_HPC/AISO/rl4uc/rl4uc/data/envs/${num_gen}gen.json $workers $epochs $entropy_coef $clip_ratio $ac_lr $cr_lr $ac_arch $cr_arch $buffer_size ;
 done
