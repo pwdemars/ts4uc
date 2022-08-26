@@ -268,7 +268,7 @@ class ACAgent(nn.Module):
 
         return x, unconstrained_gens, draft_action
         
-    def generate_action(self, env, obs):
+    def generate_action(self, env, obs, argmax=False):
         """
         1. Determine constrained generators, init action and concatenate onto state
         2. Concatenate one-hot encoding onto state
@@ -298,7 +298,10 @@ class ACAgent(nn.Module):
             pi = self.forward_ac(x_g)
             
             # Sample action
-            a = pi.sample()
+            if argmax:
+                a = pi.probs.argmax()
+            else:
+                a = pi.sample()
             
             # Update log_prob
             log_prob = pi.log_prob(a)

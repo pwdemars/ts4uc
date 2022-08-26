@@ -113,7 +113,7 @@ class PPOAgent(nn.Module):
         x = torch.as_tensor(x).float().to(self.device)
         return self.forward_cr(x), x
         
-    def generate_action(self, env, obs):
+    def generate_action(self, env, obs, argmax=False):
         """
         1. Determine constrained generators, init action and concatenate onto state
         2. Concatenate one-hot encoding onto state
@@ -160,7 +160,10 @@ class PPOAgent(nn.Module):
             pi = self.forward_ac(x_g)
             
             # Sample action
-            a = pi.sample()
+            if argmax: 
+                a = pi.probs.argmax()
+            else:
+                a = pi.sample()
             
             # Update log_prob
             log_prob = pi.log_prob(a)
