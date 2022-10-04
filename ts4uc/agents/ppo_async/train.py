@@ -154,7 +154,7 @@ def run_worker(save_dir, rank, num_epochs, shared_ac, epoch_counter, env_params,
             shared_ac.entropy_coef = params.get('entropy_coef') * (3 * epoch_counter.item() / num_epochs )
 
         # Anneal entropy
-        ANNEAL_ENTROPY = True
+        ANNEAL_ENTROPY = False
         if ANNEAL_ENTROPY: 
             new_coef = (1 - epoch_counter / num_epochs) * params['entropy_coef']
             print(new_coef)
